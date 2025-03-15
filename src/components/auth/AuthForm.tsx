@@ -1,26 +1,39 @@
+import React, { useState } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import { useToast } from "@/hooks/use-toast";
+import { Loader2 } from "lucide-react";
+import axios from "axios";
+import { useUser } from '@/context/UserContext';
 
-import React, { useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
-import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { useToast } from '@/hooks/use-toast';
-import { Loader2 } from 'lucide-react';
 
 export function AuthForm() {
   const [searchParams] = useSearchParams();
-  const defaultTab = searchParams.get('mode') === 'register' ? 'register' : 'login';
+  const defaultTab =
+    searchParams.get("mode") === "register" ? "register" : "login";
   const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState("");
   const navigate = useNavigate();
   const { toast } = useToast();
-  
+  const { registerUser } = useUser();
+
+
   const [formData, setFormData] = useState({
-    email: '',
-    password: '',
-    confirmPassword: '',
-    name: '',
+    email: "",
+    password: "",
+    confirmPassword: "",
+    name: "",
   });
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -30,27 +43,39 @@ export function AuthForm() {
     });
   };
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e) => {
     e.preventDefault();
     setIsLoading(true);
-    
+    setError("");
+
     try {
-      // This is a placeholder for actual authentication logic
-      console.log('Login attempt with:', formData.email);
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/auth/signin`,
+        formData,
+        {
+          withCredentials: true,
+        }
+      );
+      console.log("Login response", response.data);
+      if (!response.data.success) {
+        throw new Error(response.data.error || "Login failed");
+      }
+
       toast({
         title: "Success",
         description: "You've been logged in successfully.",
       });
-      
-      navigate('/gallery');
-    } catch (error) {
+
+      // Register user in context
+      registerUser(response.data.user);
+
+      navigate("/");
+    } catch (err) {
+      setError(err.message);
       toast({
         title: "Error",
-        description: "Failed to login. Please check your credentials.",
+        description:
+          err.message || "Failed to login. Please check your credentials.",
         variant: "destructive",
       });
     } finally {
@@ -58,9 +83,9 @@ export function AuthForm() {
     }
   };
 
-  const handleRegister = async (e: React.FormEvent) => {
+  const handleRegister = async (e) => {
     e.preventDefault();
-    
+
     if (formData.password !== formData.confirmPassword) {
       toast({
         title: "Error",
@@ -69,26 +94,42 @@ export function AuthForm() {
       });
       return;
     }
-    
+
     setIsLoading(true);
-    
+    setError("");
+
     try {
-      // This is a placeholder for actual registration logic
-      console.log('Registration attempt with:', formData.email, formData.name);
-      
-      // Simulate API call delay
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
+      const response = await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/auth/signup`,
+        {
+          fullName: formData.name,
+          email: formData.email,
+          password: formData.password,
+        },
+        {
+          withCredentials: true,
+        }
+      );
+      console.log("register response", response.data);
+      if (!response.data.success) {
+        throw new Error(response.data.error || "Signup failed");
+      }
+
+      // Register user in context
+      registerUser(response.data.user);
+
       toast({
         title: "Success",
         description: "Your account has been created successfully.",
       });
-      
-      navigate('/gallery');
-    } catch (error) {
+
+      navigate("/");
+    } catch (err) {
+      setError(err.message);
       toast({
         title: "Error",
-        description: "Failed to create account. Please try again.",
+        description:
+          err.message || "Failed to create account. Please try again.",
         variant: "destructive",
       });
     } finally {
@@ -103,12 +144,14 @@ export function AuthForm() {
           <TabsTrigger value="login">Login</TabsTrigger>
           <TabsTrigger value="register">Register</TabsTrigger>
         </TabsList>
-        
+
         <TabsContent value="login">
           <form onSubmit={handleLogin}>
             <CardHeader>
               <CardTitle className="text-2xl">Welcome back</CardTitle>
-              <CardDescription>Enter your credentials to sign in to your account</CardDescription>
+              <CardDescription>
+                Enter your credentials to sign in to your account
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -127,7 +170,11 @@ export function AuthForm() {
               <div className="space-y-2">
                 <div className="flex items-center justify-between">
                   <Label htmlFor="password">Password</Label>
-                  <Button variant="link" size="sm" className="px-0 h-auto text-xs">
+                  <Button
+                    variant="link"
+                    size="sm"
+                    className="px-0 h-auto text-xs"
+                  >
                     Forgot password?
                   </Button>
                 </div>
@@ -146,7 +193,8 @@ export function AuthForm() {
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please wait
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Please
+                    wait
                   </>
                 ) : (
                   "Sign In"
@@ -155,12 +203,14 @@ export function AuthForm() {
             </CardFooter>
           </form>
         </TabsContent>
-        
+
         <TabsContent value="register">
           <form onSubmit={handleRegister}>
             <CardHeader>
               <CardTitle className="text-2xl">Create an account</CardTitle>
-              <CardDescription>Enter your information to create a new account</CardDescription>
+              <CardDescription>
+                Enter your information to create a new account
+              </CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="space-y-2">
@@ -218,7 +268,8 @@ export function AuthForm() {
               <Button type="submit" className="w-full" disabled={isLoading}>
                 {isLoading ? (
                   <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating account
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Creating
+                    account
                   </>
                 ) : (
                   "Create Account"
