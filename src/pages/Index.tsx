@@ -1,5 +1,5 @@
 
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { Link } from 'react-router-dom';
 import { Navbar } from '@/components/layout/Navbar';
@@ -12,7 +12,30 @@ import { useTheme } from '@/context/ThemeContext';
 
 const Index = () => {
   const { theme } = useTheme();
-  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+  const [isDark, setIsDark] = useState(false);
+  
+  useEffect(() => {
+    // Check if the current theme is dark
+    if (theme === 'dark') {
+      setIsDark(true);
+    } else if (theme === 'light') {
+      setIsDark(false);
+    } else if (theme === 'system') {
+      // Check system preference
+      setIsDark(window.matchMedia('(prefers-color-scheme: dark)').matches);
+    }
+    
+    // Listen for system theme changes
+    const mediaQuery = window.matchMedia('(prefers-color-scheme: dark)');
+    const handleChange = () => {
+      if (theme === 'system') {
+        setIsDark(mediaQuery.matches);
+      }
+    };
+    
+    mediaQuery.addEventListener('change', handleChange);
+    return () => mediaQuery.removeEventListener('change', handleChange);
+  }, [theme]);
 
   return (
     <div className="min-h-screen flex flex-col">
