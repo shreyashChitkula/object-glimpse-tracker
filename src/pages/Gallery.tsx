@@ -139,7 +139,7 @@ const Gallery = () => {
   const handleMediaClick = (mediaId: string) => {
     // In a real app, we would pass the media data to the detection page
     // For now, we'll just navigate to the dashboard
-    navigate(`/dashboard?mediaId=${mediaId}`);
+    navigate(`/dashboard?mediaURL=${mediaId}`);
   };
 
   return (
@@ -197,7 +197,7 @@ const Gallery = () => {
                 <Card
                   key={media.id}
                   className="overflow-hidden group cursor-pointer hover:shadow-md transition-all"
-                  onClick={() => handleMediaClick(media.id)}
+                  onClick={() => handleMediaClick(media.thumbnail)}
                 >
                   <div className="relative aspect-video">
                     <img

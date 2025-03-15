@@ -50,7 +50,6 @@ const Index = () => {
     return () => mediaQuery.removeEventListener("change", handleChange);
   }, [theme]);
 
-
   return (
     <div className="min-h-screen flex flex-col">
       <Helmet>
@@ -186,9 +185,15 @@ const Index = () => {
                 Create an account to access all features and begin detecting
                 objects in challenging visibility conditions.
               </p>
-              <Link to="/auth?mode=register">
-                <Button size="lg">Get Started</Button>
-              </Link>
+              {isAuthenticated ? (
+                <Link to="/dashboard">
+                  <Button size="lg">Get Started</Button>
+                </Link>
+              ) : (
+                <Link to="/auth?mode=register">
+                  <Button size="lg">Get Started</Button>
+                </Link>
+              )}
             </div>
 
             <div className="w-full md:w-1/2 aspect-video rounded-lg shadow-lg overflow-hidden">
