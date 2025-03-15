@@ -46,7 +46,7 @@ export function AuthForm() {
         description: "You've been logged in successfully.",
       });
       
-      navigate('/dashboard');
+      navigate('/gallery');
     } catch (error) {
       toast({
         title: "Error",
@@ -84,7 +84,7 @@ export function AuthForm() {
         description: "Your account has been created successfully.",
       });
       
-      navigate('/dashboard');
+      navigate('/gallery');
     } catch (error) {
       toast({
         title: "Error",
