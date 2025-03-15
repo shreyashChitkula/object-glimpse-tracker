@@ -9,6 +9,7 @@ import { ArrowRight, CloudSun, Image, Camera, Cpu, ListChecks, Cog, Download } f
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { useTheme } from '@/context/ThemeContext';
+import { AspectRatio } from '@/components/ui/aspect-ratio';
 
 const Index = () => {
   const { theme } = useTheme();
@@ -79,15 +80,16 @@ const Index = () => {
           </div>
         </div>
         
-        {/* Preview Image */}
+        {/* Preview Image - Now with GIF */}
         <div className="container px-4 pb-20 md:pb-32">
           <div className="w-full max-w-5xl mx-auto mt-10 glass-card overflow-hidden">
-            <div className="relative aspect-video w-full">
-              <div className="absolute inset-0 bg-card animate-pulse"></div>
-              <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
-                <Camera className="h-10 w-10 opacity-20" />
-              </div>
-            </div>
+            <AspectRatio ratio={16/9} className="w-full">
+              <img 
+                src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcnY0NzVkMTcwdG9rZjIyOXF1OGxmcGZjYWJjbjU5NnRzaXFiNXdxMSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oKIPiOSxivAhbDpq8/giphy.gif" 
+                alt="Object detection demonstration" 
+                className="w-full h-full object-cover"
+              />
+            </AspectRatio>
           </div>
         </div>
       </section>
@@ -159,10 +161,14 @@ const Index = () => {
               </Link>
             </div>
             
-            <div className="w-full md:w-1/2 aspect-video bg-card rounded-lg shadow-lg overflow-hidden">
-              <div className="h-full w-full bg-muted animate-pulse flex items-center justify-center">
-                <Camera className="h-10 w-10 text-muted-foreground/20" />
-              </div>
+            <div className="w-full md:w-1/2 aspect-video rounded-lg shadow-lg overflow-hidden">
+              <AspectRatio ratio={16/9} className="w-full">
+                <img 
+                  src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMHdtMmxzc2loeXd6cHNsbWZ5MmJvbGw5bDczd3cxMTBsMnVncTgybiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/RBLigAZ2WN9S6cUvXR/giphy.gif" 
+                  alt="Object tracking in adverse weather" 
+                  className="w-full h-full object-cover"
+                />
+              </AspectRatio>
             </div>
           </div>
         </div>
