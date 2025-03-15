@@ -8,8 +8,12 @@ import { Button } from '@/components/ui/button';
 import { ArrowRight, CloudSun, Image, Camera, Cpu, ListChecks, Cog, Download } from 'lucide-react';
 import { Card, CardContent } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
+import { useTheme } from '@/context/ThemeContext';
 
 const Index = () => {
+  const { theme } = useTheme();
+  const isDark = theme === 'dark' || (theme === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+
   return (
     <div className="min-h-screen flex flex-col">
       <Helmet>
@@ -20,11 +24,11 @@ const Index = () => {
       
       {/* Hero Section */}
       <section className="relative pt-20 overflow-hidden">
-        <div className="absolute inset-0 -z-10 bg-[radial-gradient(ellipse_at_top,_var(--tw-gradient-stops))] from-blue-50 via-white to-white"></div>
+        <div className={`absolute inset-0 -z-10 ${isDark ? 'hero-bg-dark' : 'hero-bg-light'}`}></div>
         
         <div className="container px-4 py-20 md:py-32">
           <div className="flex flex-col items-center text-center max-w-4xl mx-auto">
-            <Badge variant="outline" className="mb-4 px-3 py-1 text-sm bg-white/80 backdrop-blur-sm">
+            <Badge variant="outline" className="mb-4 px-3 py-1 text-sm bg-background/80 backdrop-blur-sm">
               Real-time Object Detection
             </Badge>
             
@@ -56,7 +60,7 @@ const Index = () => {
         <div className="container px-4 pb-20 md:pb-32">
           <div className="w-full max-w-5xl mx-auto mt-10 glass-card overflow-hidden">
             <div className="relative aspect-video w-full">
-              <div className="absolute inset-0 bg-gray-200 animate-pulse"></div>
+              <div className="absolute inset-0 bg-card animate-pulse"></div>
               <div className="absolute inset-0 flex items-center justify-center text-muted-foreground">
                 <Camera className="h-10 w-10 opacity-20" />
               </div>
@@ -66,7 +70,7 @@ const Index = () => {
       </section>
       
       {/* Features Section */}
-      <section className="py-20 bg-white">
+      <section className="py-20 bg-background">
         <div className="container px-4">
           <div className="text-center max-w-3xl mx-auto mb-16">
             <Badge variant="outline" className="mb-3">Features</Badge>
@@ -132,8 +136,8 @@ const Index = () => {
               </Link>
             </div>
             
-            <div className="w-full md:w-1/2 aspect-video bg-white rounded-lg shadow-lg overflow-hidden">
-              <div className="h-full w-full bg-gray-100 animate-pulse flex items-center justify-center">
+            <div className="w-full md:w-1/2 aspect-video bg-card rounded-lg shadow-lg overflow-hidden">
+              <div className="h-full w-full bg-muted animate-pulse flex items-center justify-center">
                 <Camera className="h-10 w-10 text-muted-foreground/20" />
               </div>
             </div>

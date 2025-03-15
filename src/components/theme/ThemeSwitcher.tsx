@@ -9,9 +9,25 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Moon, Sun, Laptop } from 'lucide-react';
 import { useTheme } from '@/context/ThemeContext';
+import { toast } from "sonner";
 
 export function ThemeSwitcher() {
   const { theme, setTheme } = useTheme();
+
+  const handleThemeChange = (newTheme: 'light' | 'dark' | 'system') => {
+    setTheme(newTheme);
+    
+    const themeName = {
+      'light': 'Light',
+      'dark': 'Dark',
+      'system': 'System'
+    }[newTheme];
+    
+    toast(`Theme changed to ${themeName}`, {
+      description: `The application theme is now set to ${themeName} mode.`,
+      position: "bottom-right",
+    });
+  };
 
   return (
     <DropdownMenu>
@@ -24,15 +40,15 @@ export function ThemeSwitcher() {
         </Button>
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end">
-        <DropdownMenuItem onClick={() => setTheme('light')} className="cursor-pointer">
+        <DropdownMenuItem onClick={() => handleThemeChange('light')} className="cursor-pointer">
           <Sun className="mr-2 h-4 w-4" />
           <span>Light</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('dark')} className="cursor-pointer">
+        <DropdownMenuItem onClick={() => handleThemeChange('dark')} className="cursor-pointer">
           <Moon className="mr-2 h-4 w-4" />
           <span>Dark</span>
         </DropdownMenuItem>
-        <DropdownMenuItem onClick={() => setTheme('system')} className="cursor-pointer">
+        <DropdownMenuItem onClick={() => handleThemeChange('system')} className="cursor-pointer">
           <Laptop className="mr-2 h-4 w-4" />
           <span>System</span>
         </DropdownMenuItem>
