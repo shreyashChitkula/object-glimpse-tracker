@@ -126,138 +126,139 @@
 }
 
 /* Dark mode specific adjustments */
-.dark .bg-white {
-  @apply bg-gray-900;
+/* Fix circular dependency - don't use @apply inside selectors that include the targeted class */
+.dark .bg-white-element {
+  background-color: rgb(17, 24, 39); /* gray-900 equivalent */
 }
 
 .dark .text-black {
-  @apply text-white;
+  color: rgb(255, 255, 255); /* white */
 }
 
 .dark .border-black {
-  @apply border-white;
+  border-color: rgb(255, 255, 255); /* white */
 }
 
 /* Light mode specific adjustments */
-.light .bg-gray-900 {
-  @apply bg-white;
+.light .bg-gray-900-element {
+  background-color: rgb(255, 255, 255); /* white */
 }
 
 .light .text-white {
-  @apply text-black;
+  color: rgb(0, 0, 0); /* black */
 }
 
 .light .border-white {
-  @apply border-black;
+  border-color: rgb(0, 0, 0); /* black */
 }
 
-/* Preserve opacity in background colors */
+/* Preserve opacity in background colors - Use direct CSS with RGBA values instead of @apply */
 .dark .bg-white\/10 {
-  @apply bg-gray-900/10;
+  background-color: rgba(17, 24, 39, 0.1); /* gray-900/10 */
 }
 
 .dark .bg-white\/20 {
-  @apply bg-gray-900/20;
+  background-color: rgba(17, 24, 39, 0.2); /* gray-900/20 */
 }
 
 .dark .bg-white\/30 {
-  @apply bg-gray-900/30;
+  background-color: rgba(17, 24, 39, 0.3); /* gray-900/30 */
 }
 
 .dark .bg-white\/40 {
-  @apply bg-gray-900/40;
+  background-color: rgba(17, 24, 39, 0.4); /* gray-900/40 */
 }
 
 .dark .bg-white\/50 {
-  @apply bg-gray-900/50;
+  background-color: rgba(17, 24, 39, 0.5); /* gray-900/50 */
 }
 
 .dark .bg-white\/60 {
-  @apply bg-gray-900/60;
+  background-color: rgba(17, 24, 39, 0.6); /* gray-900/60 */
 }
 
 .dark .bg-white\/70 {
-  @apply bg-gray-900/70;
+  background-color: rgba(17, 24, 39, 0.7); /* gray-900/70 */
 }
 
 .dark .bg-white\/80 {
-  @apply bg-gray-900/80;
+  background-color: rgba(17, 24, 39, 0.8); /* gray-900/80 */
 }
 
 .dark .bg-white\/90 {
-  @apply bg-gray-900/90;
+  background-color: rgba(17, 24, 39, 0.9); /* gray-900/90 */
 }
 
 /* Preserve opacity in text colors */
 .dark .text-black\/10 {
-  @apply text-white/10;
+  color: rgba(255, 255, 255, 0.1); /* white/10 */
 }
 
 .dark .text-black\/20 {
-  @apply text-white/20;
+  color: rgba(255, 255, 255, 0.2); /* white/20 */
 }
 
 .dark .text-black\/30 {
-  @apply text-white/30;
+  color: rgba(255, 255, 255, 0.3); /* white/30 */
 }
 
 .dark .text-black\/40 {
-  @apply text-white/40;
+  color: rgba(255, 255, 255, 0.4); /* white/40 */
 }
 
 .dark .text-black\/50 {
-  @apply text-white/50;
+  color: rgba(255, 255, 255, 0.5); /* white/50 */
 }
 
 .dark .text-black\/60 {
-  @apply text-white/60;
+  color: rgba(255, 255, 255, 0.6); /* white/60 */
 }
 
 .dark .text-black\/70 {
-  @apply text-white/70;
+  color: rgba(255, 255, 255, 0.7); /* white/70 */
 }
 
 .dark .text-black\/80 {
-  @apply text-white/80;
+  color: rgba(255, 255, 255, 0.8); /* white/80 */
 }
 
 .dark .text-black\/90 {
-  @apply text-white/90;
+  color: rgba(255, 255, 255, 0.9); /* white/90 */
 }
 
 /* Preserve opacity in border colors */
 .dark .border-black\/10 {
-  @apply border-white/10;
+  border-color: rgba(255, 255, 255, 0.1); /* white/10 */
 }
 
 .dark .border-black\/20 {
-  @apply border-white/20;
+  border-color: rgba(255, 255, 255, 0.2); /* white/20 */
 }
 
 .dark .border-black\/30 {
-  @apply border-white/30;
+  border-color: rgba(255, 255, 255, 0.3); /* white/30 */
 }
 
 .dark .border-black\/40 {
-  @apply border-white/40;
+  border-color: rgba(255, 255, 255, 0.4); /* white/40 */
 }
 
 .dark .border-black\/50 {
-  @apply border-white/50;
+  border-color: rgba(255, 255, 255, 0.5); /* white/50 */
 }
 
 .dark .border-black\/60 {
-  @apply border-white/60;
+  border-color: rgba(255, 255, 255, 0.6); /* white/60 */
 }
 
 .dark .border-black\/70 {
-  @apply border-white/70;
+  border-color: rgba(255, 255, 255, 0.7); /* white/70 */
 }
 
 .dark .border-black\/80 {
-  @apply border-white/80;
+  border-color: rgba(255, 255, 255, 0.8); /* white/80 */
 }
 
 .dark .border-black\/90 {
-  @apply border-white/90;
+  border-color: rgba(255, 255, 255, 0.9); /* white/90 */
 }
