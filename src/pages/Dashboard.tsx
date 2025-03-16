@@ -120,7 +120,7 @@ const Dashboard = () => {
     setSelectedModel(modelId);
     if (uploadedImage && detections) {
       // If an image is already processed, reprocess with the new model
-      handleProcessImage();
+      // handleProcessImage();
     }
   };
 

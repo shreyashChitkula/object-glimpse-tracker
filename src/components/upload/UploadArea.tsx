@@ -1,4 +1,3 @@
-
 import React, { useState, useRef } from 'react';
 import { Upload, Image, Trash2, Loader2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -61,11 +60,6 @@ export function UploadArea({ onImageUpload }: UploadAreaProps) {
     const reader = new FileReader();
     reader.onload = () => {
       setPreviewUrl(reader.result as string);
-    };
-    reader.readAsDataURL(file);
-    
-    // Simulate upload delay
-    setTimeout(() => {
       setIsUploading(false);
       onImageUpload(file);
       
@@ -73,10 +67,12 @@ export function UploadArea({ onImageUpload }: UploadAreaProps) {
         title: "Upload successful",
         description: "Your image has been uploaded successfully.",
       });
-    }, 1000);
+    };
+    reader.readAsDataURL(file);
   };
 
-  const handleBrowseClick = () => {
+  const handleBrowseClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
     if (fileInputRef.current) {
       fileInputRef.current.click();
     }
@@ -132,7 +128,12 @@ export function UploadArea({ onImageUpload }: UploadAreaProps) {
             <p className="text-sm text-muted-foreground text-center mb-4">
               Drag and drop or click to browse
             </p>
-            <Button variant="outline" size="sm" onClick={handleBrowseClick}>
+            <Button 
+              variant="outline" 
+              size="sm" 
+              onClick={handleBrowseClick}
+              type="button"
+            >
               Browse files
             </Button>
           </CardContent>

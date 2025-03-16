@@ -9,6 +9,7 @@ import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import { useUser } from "@/context/UserContext";
 import axios from "axios";
 import { useToast } from "@/hooks/use-toast";
+import { DialogTitle, DialogDescription } from "@/components/ui/dialog";
 
 type NavItem = {
   title: string;
@@ -105,10 +106,14 @@ export function Navbar() {
               <SheetTrigger asChild>
                 <Button variant="ghost" size="icon" className="h-9 w-9">
                   <Menu className="h-5 w-5" />
-                  <span className="sr-only">Toggle menu</span>
+                  <span className="sr-only">Open navigation menu</span>
                 </Button>
               </SheetTrigger>
               <SheetContent side="right" className="w-[250px] p-0">
+                <DialogTitle className="sr-only">ObjectTracker Navigation</DialogTitle>
+                <DialogDescription className="sr-only">
+                  Access ObjectTracker features and settings
+                </DialogDescription>
                 <div className="flex flex-col h-full">
                   <div className="px-6 py-5 border-b">
                     <div className="flex items-center justify-between">
@@ -122,15 +127,6 @@ export function Navbar() {
                           ObjectTracker
                         </span>
                       </Link>
-                      {/* <Button 
-                        variant="ghost"
-                        size="icon"
-                        className="h-8 w-8"
-                        onClick={() => setIsOpen(false)}
-                      >
-                        <X className="h-4 w-4" />
-                        <span className="sr-only">Close</span>
-                      </Button> */}
                     </div>
                   </div>
                   <nav className="px-4 py-6 space-y-3 flex-1">
@@ -155,7 +151,7 @@ export function Navbar() {
                     <div className="flex flex-col gap-2">
                       {isAuthenticated ? (
                         <Button size="sm" onClick={handleLogout}>
-                          Logout
+                          Sign Out
                         </Button>
                       ) : (
                         <>
@@ -171,7 +167,7 @@ export function Navbar() {
                             to="/auth?mode=register"
                             onClick={() => setIsOpen(false)}
                           >
-                            <Button className="w-full">Register</Button>
+                            <Button className="w-full">Create Account</Button>
                           </Link>
                         </>
                       )}
@@ -205,9 +201,12 @@ export function Navbar() {
 
               {isAuthenticated ? (
                 <div className="flex items-center gap-4">
-                  <span>Welcome, {user?.fullName}</span>
+                  <span>
+                    Welcome back,{" "}
+                    <span className="text-primary">{user?.fullName}</span>
+                  </span>
                   <Button size="sm" onClick={handleLogout}>
-                    Logout
+                    Sign Out
                   </Button>
                 </div>
               ) : (
@@ -219,7 +218,7 @@ export function Navbar() {
                   </Link>
                   <Link to="/auth?mode=register">
                     <Button size="sm" className="h-8">
-                      Register
+                      Create Account
                     </Button>
                   </Link>
                 </>
