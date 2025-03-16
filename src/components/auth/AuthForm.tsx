@@ -17,7 +17,6 @@ import { Loader2 } from "lucide-react";
 import axios from "axios";
 import { useUser } from '@/context/UserContext';
 
-
 export function AuthForm() {
   const [searchParams] = useSearchParams();
   const defaultTab =
@@ -27,7 +26,6 @@ export function AuthForm() {
   const navigate = useNavigate();
   const { toast } = useToast();
   const { registerUser } = useUser();
-
 
   const [formData, setFormData] = useState({
     email: "",
@@ -49,6 +47,28 @@ export function AuthForm() {
     setError("");
 
     try {
+      // Special case for admin login demonstration
+      if (formData.email === "admin@example.com" && formData.password === "admin123") {
+        // Mock admin user login
+        const adminUser = {
+          id: "admin-id",
+          fullName: "Admin User",
+          email: "admin@example.com",
+          role: "admin"
+        };
+        
+        registerUser(adminUser);
+        
+        toast({
+          title: "Admin Login",
+          description: "You've been logged in as an administrator.",
+        });
+        
+        navigate("/admin");
+        return;
+      }
+
+      // Regular user login process
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/auth/signin`,
         formData,
@@ -61,13 +81,19 @@ export function AuthForm() {
         throw new Error(response.data.error || "Login failed");
       }
 
+      // Add role property to user object if not present
+      const userData = {
+        ...response.data.user,
+        role: response.data.user.role || "user"
+      };
+
       toast({
         title: "Success",
         description: "You've been logged in successfully.",
       });
 
       // Register user in context
-      registerUser(response.data.user);
+      registerUser(userData);
 
       navigate("/");
     } catch (err) {
@@ -105,6 +131,7 @@ export function AuthForm() {
           fullName: formData.name,
           email: formData.email,
           password: formData.password,
+          role: "user" // Default role for new users
         },
         {
           withCredentials: true,
@@ -116,7 +143,10 @@ export function AuthForm() {
       }
 
       // Register user in context
-      registerUser(response.data.user);
+      registerUser({
+        ...response.data.user,
+        role: "user"
+      });
 
       toast({
         title: "Success",
@@ -187,6 +217,11 @@ export function AuthForm() {
                   onChange={handleChange}
                   className="transition-all"
                 />
+              </div>
+              <div className="text-xs text-muted-foreground">
+                <p>For admin access demo use:</p>
+                <p>Email: admin@example.com</p>
+                <p>Password: admin123</p>
               </div>
             </CardContent>
             <CardFooter>
