@@ -9,8 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, Trash2, Database, Users, Box } from 'lucide-react';
+import { 
+  Loader2, Upload, Trash2, Database, Users, Box, 
+  UserRoundPlus, Search, MoreVertical, Edit, ShieldCheck, ShieldX
+} from 'lucide-react';
 import { UploadArea } from '@/components/upload/UploadArea';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 
 const Admin = () => {
   const { user } = useUser();
@@ -20,6 +24,26 @@ const Admin = () => {
   const [modelFile, setModelFile] = useState<File | null>(null);
   const [modelType, setModelType] = useState('detection');
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [userSearchQuery, setUserSearchQuery] = useState('');
+  const [dataSearchQuery, setDataSearchQuery] = useState('');
+
+  // Dummy data for users
+  const dummyUsers = [
+    { id: '1', name: 'John Doe', email: 'john@example.com', role: 'admin', lastActive: '2023-10-15' },
+    { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'user', lastActive: '2023-10-14' },
+    { id: '3', name: 'Robert Johnson', email: 'robert@example.com', role: 'user', lastActive: '2023-10-12' },
+    { id: '4', name: 'Emily White', email: 'emily@example.com', role: 'user', lastActive: '2023-10-10' },
+    { id: '5', name: 'Michael Brown', email: 'michael@example.com', role: 'admin', lastActive: '2023-10-09' },
+  ];
+
+  // Dummy data for images
+  const dummyImages = [
+    { id: '1', name: 'traffic_cam_01.jpg', type: 'JPEG', size: '2.4 MB', date: '2023-10-15', tags: ['traffic', 'street'] },
+    { id: '2', name: 'surveillance_02.png', type: 'PNG', size: '3.1 MB', date: '2023-10-14', tags: ['surveillance', 'night'] },
+    { id: '3', name: 'drone_footage_03.jpg', type: 'JPEG', size: '4.7 MB', date: '2023-10-12', tags: ['aerial', 'city'] },
+    { id: '4', name: 'security_cam_04.mp4', type: 'MP4', size: '8.2 MB', date: '2023-10-10', tags: ['security', 'indoor'] },
+    { id: '5', name: 'tracking_sample_05.jpg', type: 'JPEG', size: '1.8 MB', date: '2023-10-09', tags: ['tracking', 'person'] },
+  ];
 
   const handleModelUpload = (file: File) => {
     setModelFile(file);
@@ -73,6 +97,20 @@ const Admin = () => {
       setUploading(false);
     }
   };
+
+  // Filter users based on search query
+  const filteredUsers = dummyUsers.filter(user => 
+    user.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+    user.email.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
+    user.role.toLowerCase().includes(userSearchQuery.toLowerCase())
+  );
+
+  // Filter images based on search query
+  const filteredImages = dummyImages.filter(image => 
+    image.name.toLowerCase().includes(dataSearchQuery.toLowerCase()) ||
+    image.type.toLowerCase().includes(dataSearchQuery.toLowerCase()) ||
+    image.tags.some(tag => tag.toLowerCase().includes(dataSearchQuery.toLowerCase()))
+  );
 
   return (
     <div className="container py-10 max-w-7xl mx-auto min-h-screen">
@@ -215,13 +253,144 @@ const Admin = () => {
           </TabsContent>
           
           <TabsContent value="users" className="space-y-4">
-            <h2 className="text-xl font-semibold">User Management</h2>
-            <p className="text-muted-foreground">User management interface will be implemented here.</p>
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">User Management</h2>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="search"
+                      placeholder="Search users..."
+                      className="pl-9 w-[250px]"
+                      value={userSearchQuery}
+                      onChange={(e) => setUserSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <Button>
+                    <UserRoundPlus className="mr-2 h-4 w-4" />
+                    Add User
+                  </Button>
+                </div>
+              </div>
+              
+              <Card>
+                <Table>
+                  <TableHeader>
+                    <TableRow>
+                      <TableHead>Name</TableHead>
+                      <TableHead>Email</TableHead>
+                      <TableHead>Role</TableHead>
+                      <TableHead>Last Active</TableHead>
+                      <TableHead className="w-[80px]">Actions</TableHead>
+                    </TableRow>
+                  </TableHeader>
+                  <TableBody>
+                    {filteredUsers.length === 0 ? (
+                      <TableRow>
+                        <TableCell colSpan={5} className="text-center py-6 text-muted-foreground">
+                          No users found
+                        </TableCell>
+                      </TableRow>
+                    ) : (
+                      filteredUsers.map((user) => (
+                        <TableRow key={user.id}>
+                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell>{user.email}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-1">
+                              {user.role === 'admin' ? (
+                                <>
+                                  <ShieldCheck className="h-4 w-4 text-primary" />
+                                  <span className="font-medium">Admin</span>
+                                </>
+                              ) : (
+                                <span>User</span>
+                              )}
+                            </div>
+                          </TableCell>
+                          <TableCell>{user.lastActive}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center justify-end">
+                              <Button variant="ghost" size="icon">
+                                <MoreVertical className="h-4 w-4" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      ))
+                    )}
+                  </TableBody>
+                </Table>
+              </Card>
+            </div>
           </TabsContent>
           
           <TabsContent value="data" className="space-y-4">
-            <h2 className="text-xl font-semibold">Data Management</h2>
-            <p className="text-muted-foreground">Data management interface will be implemented here.</p>
+            <div className="flex flex-col gap-4">
+              <div className="flex justify-between items-center">
+                <h2 className="text-xl font-semibold">Data Management</h2>
+                <div className="flex items-center gap-2">
+                  <div className="relative">
+                    <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
+                    <Input
+                      type="search"
+                      placeholder="Search images..."
+                      className="pl-9 w-[250px]"
+                      value={dataSearchQuery}
+                      onChange={(e) => setDataSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <Button>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Images
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+                {filteredImages.map((image) => (
+                  <Card key={image.id} className="overflow-hidden">
+                    <div className="aspect-video bg-muted relative">
+                      <div className="absolute inset-0 flex items-center justify-center">
+                        <img 
+                          src={`https://source.unsplash.com/random/800x600?${image.tags.join(',')}`} 
+                          alt={image.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                    </div>
+                    <CardHeader className="pb-2">
+                      <CardTitle className="text-base">{image.name}</CardTitle>
+                      <CardDescription className="flex gap-2 flex-wrap">
+                        {image.tags.map((tag) => (
+                          <span key={tag} className="inline-flex items-center rounded-full bg-secondary px-2 py-1 text-xs">
+                            {tag}
+                          </span>
+                        ))}
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="pb-2 pt-0">
+                      <div className="flex justify-between text-sm text-muted-foreground">
+                        <span>{image.type}</span>
+                        <span>{image.size}</span>
+                        <span>{image.date}</span>
+                      </div>
+                    </CardContent>
+                    <CardFooter className="pt-0 flex justify-between">
+                      <Button variant="outline" size="sm">
+                        <Edit className="mr-2 h-3 w-3" />
+                        Edit
+                      </Button>
+                      <Button variant="destructive" size="sm">
+                        <Trash2 className="mr-2 h-3 w-3" />
+                        Delete
+                      </Button>
+                    </CardFooter>
+                  </Card>
+                ))}
+              </div>
+            </div>
           </TabsContent>
         </Tabs>
       </div>
