@@ -131,7 +131,6 @@ export function AuthForm() {
           fullName: formData.name,
           email: formData.email,
           password: formData.password,
-          role: "user" // Default role for new users
         },
         {
           withCredentials: true,
@@ -218,11 +217,11 @@ export function AuthForm() {
                   className="transition-all"
                 />
               </div>
-              <div className="text-xs text-muted-foreground">
+              {/* <div className="text-xs text-muted-foreground">
                 <p>For admin access demo use:</p>
                 <p>Email: admin@example.com</p>
                 <p>Password: admin123</p>
-              </div>
+              </div> */}
             </CardContent>
             <CardFooter>
               <Button type="submit" className="w-full" disabled={isLoading}>
