@@ -1,3 +1,4 @@
+
 import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -13,7 +14,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
-import { Loader2 } from "lucide-react";
+import { Loader2, Check, X } from "lucide-react";
 import axios from "axios";
 import { useUser } from "@/context/UserContext";
 
@@ -63,7 +64,7 @@ export function AuthForm() {
     });
   };
 
-  const handleLogin = async (e) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsLoading(true);
     setError("");
@@ -76,7 +77,7 @@ export function AuthForm() {
           id: "admin-id",
           fullName: "Admin User",
           email: "admin@example.com",
-          role: "admin"
+          role: "admin" as "admin" // Type assertion to fix the TS error
         };
         
         registerUser(adminUser);
@@ -106,7 +107,7 @@ export function AuthForm() {
       // Add role property to user object if not present
       const userData = {
         ...response.data.user,
-        role: response.data.user.role || "user"
+        role: (response.data.user.role || "user") as "user" | "admin" // Type assertion to fix the TS error
       };
 
       toast({
@@ -118,7 +119,7 @@ export function AuthForm() {
       registerUser(userData);
 
       navigate("/");
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
       toast({
         title: "Error",
@@ -131,7 +132,7 @@ export function AuthForm() {
     }
   };
 
-  const handleRegister = async (e) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const { length, uppercase, number, specialChar } = passwordValidation;
@@ -186,7 +187,7 @@ export function AuthForm() {
       });
 
       navigate("/");
-    } catch (err) {
+    } catch (err: any) {
       setError(err.message);
       toast({
         title: "Error",
@@ -317,38 +318,54 @@ export function AuthForm() {
                   onChange={handleChange}
                   className="transition-all"
                 />
-                <ul className="text-sm mt-2">
-                  <li
-                    className={
-                      passwordValidation.length ? "text-green-500" : "text-red-500"
-                    }
-                  >
-                    • At least 8 characters
-                  </li>
-                  <li
-                    className={
-                      passwordValidation.uppercase ? "text-green-500" : "text-red-500"
-                    }
-                  >
-                    • At least one uppercase letter
-                  </li>
-                  <li
-                    className={
-                      passwordValidation.number ? "text-green-500" : "text-red-500"
-                    }
-                  >
-                    • At least one number
-                  </li>
-                  <li
-                    className={
-                      passwordValidation.specialChar
-                        ? "text-green-500"
-                        : "text-red-500"
-                    }
-                  >
-                    • At least one special character (@, $, !, %, *, ?, &)
-                  </li>
-                </ul>
+                <div className="mt-3 space-y-2">
+                  <p className="text-sm font-medium mb-1">Password requirements:</p>
+                  <div className="grid grid-cols-1 gap-2">
+                    <div className="flex items-center">
+                      {passwordValidation.length ? (
+                        <Check className="h-4 w-4 mr-2 text-green-500" />
+                      ) : (
+                        <X className="h-4 w-4 mr-2 text-destructive" />
+                      )}
+                      <span className={`text-sm ${passwordValidation.length ? "text-green-500" : "text-destructive"}`}>
+                        At least 8 characters
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      {passwordValidation.uppercase ? (
+                        <Check className="h-4 w-4 mr-2 text-green-500" />
+                      ) : (
+                        <X className="h-4 w-4 mr-2 text-destructive" />
+                      )}
+                      <span className={`text-sm ${passwordValidation.uppercase ? "text-green-500" : "text-destructive"}`}>
+                        At least one uppercase letter
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      {passwordValidation.number ? (
+                        <Check className="h-4 w-4 mr-2 text-green-500" />
+                      ) : (
+                        <X className="h-4 w-4 mr-2 text-destructive" />
+                      )}
+                      <span className={`text-sm ${passwordValidation.number ? "text-green-500" : "text-destructive"}`}>
+                        At least one number
+                      </span>
+                    </div>
+                    
+                    <div className="flex items-center">
+                      {passwordValidation.specialChar ? (
+                        <Check className="h-4 w-4 mr-2 text-green-500" />
+                      ) : (
+                        <X className="h-4 w-4 mr-2 text-destructive" />
+                      )}
+                      <span className={`text-sm ${passwordValidation.specialChar ? "text-green-500" : "text-destructive"}`}>
+                        At least one special character (@, $, !, %, *, ?, &)
+                      </span>
+                    </div>
+                  </div>
+                </div>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
