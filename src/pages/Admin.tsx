@@ -1,4 +1,3 @@
-
 import React, { useState } from 'react';
 import { Helmet } from 'react-helmet';
 import { useUser } from '@/context/UserContext';
@@ -11,10 +10,11 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 import { 
   Loader2, Upload, Trash2, Database, Users, Box, 
-  UserRoundPlus, Search, MoreVertical, Edit, ShieldCheck, ShieldX
+  UserRoundPlus, Search, MoreVertical, Edit, ShieldCheck, ShieldX, User
 } from 'lucide-react';
 import { UploadArea } from '@/components/upload/UploadArea';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 
 const Admin = () => {
   const { user } = useUser();
@@ -29,20 +29,60 @@ const Admin = () => {
 
   // Dummy data for users
   const dummyUsers = [
-    { id: '1', name: 'John Doe', email: 'john@example.com', role: 'admin', lastActive: '2023-10-15' },
-    { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'user', lastActive: '2023-10-14' },
-    { id: '3', name: 'Robert Johnson', email: 'robert@example.com', role: 'user', lastActive: '2023-10-12' },
-    { id: '4', name: 'Emily White', email: 'emily@example.com', role: 'user', lastActive: '2023-10-10' },
-    { id: '5', name: 'Michael Brown', email: 'michael@example.com', role: 'admin', lastActive: '2023-10-09' },
+    { id: '1', name: 'John Doe', email: 'john@example.com', role: 'admin', lastActive: '2023-10-15', profileImage: 'https://source.unsplash.com/photo-1581091226825-a6a2a5aee158' },
+    { id: '2', name: 'Jane Smith', email: 'jane@example.com', role: 'user', lastActive: '2023-10-14', profileImage: '' },
+    { id: '3', name: 'Robert Johnson', email: 'robert@example.com', role: 'user', lastActive: '2023-10-12', profileImage: 'https://source.unsplash.com/photo-1649972904349-6e44c42644a7' },
+    { id: '4', name: 'Emily White', email: 'emily@example.com', role: 'user', lastActive: '2023-10-10', profileImage: '' },
+    { id: '5', name: 'Michael Brown', email: 'michael@example.com', role: 'admin', lastActive: '2023-10-09', profileImage: 'https://source.unsplash.com/photo-1487887235947-a955ef187fcc' },
   ];
 
-  // Dummy data for images
+  // Dummy data for images with owner information
   const dummyImages = [
-    { id: '1', name: 'traffic_cam_01.jpg', type: 'JPEG', size: '2.4 MB', date: '2023-10-15', tags: ['traffic', 'street'] },
-    { id: '2', name: 'surveillance_02.png', type: 'PNG', size: '3.1 MB', date: '2023-10-14', tags: ['surveillance', 'night'] },
-    { id: '3', name: 'drone_footage_03.jpg', type: 'JPEG', size: '4.7 MB', date: '2023-10-12', tags: ['aerial', 'city'] },
-    { id: '4', name: 'security_cam_04.mp4', type: 'MP4', size: '8.2 MB', date: '2023-10-10', tags: ['security', 'indoor'] },
-    { id: '5', name: 'tracking_sample_05.jpg', type: 'JPEG', size: '1.8 MB', date: '2023-10-09', tags: ['tracking', 'person'] },
+    { 
+      id: '1', 
+      name: 'traffic_cam_01.jpg', 
+      type: 'JPEG', 
+      size: '2.4 MB', 
+      date: '2023-10-15', 
+      tags: ['traffic', 'street'],
+      owner: { id: '1', name: 'John Doe', profileImage: 'https://source.unsplash.com/photo-1581091226825-a6a2a5aee158' }
+    },
+    { 
+      id: '2', 
+      name: 'surveillance_02.png', 
+      type: 'PNG', 
+      size: '3.1 MB', 
+      date: '2023-10-14', 
+      tags: ['surveillance', 'night'],
+      owner: { id: '3', name: 'Robert Johnson', profileImage: 'https://source.unsplash.com/photo-1649972904349-6e44c42644a7' } 
+    },
+    { 
+      id: '3', 
+      name: 'drone_footage_03.jpg', 
+      type: 'JPEG', 
+      size: '4.7 MB', 
+      date: '2023-10-12', 
+      tags: ['aerial', 'city'],
+      owner: { id: '5', name: 'Michael Brown', profileImage: 'https://source.unsplash.com/photo-1487887235947-a955ef187fcc' } 
+    },
+    { 
+      id: '4', 
+      name: 'security_cam_04.mp4', 
+      type: 'MP4', 
+      size: '8.2 MB', 
+      date: '2023-10-10', 
+      tags: ['security', 'indoor'],
+      owner: { id: '2', name: 'Jane Smith', profileImage: '' } 
+    },
+    { 
+      id: '5', 
+      name: 'tracking_sample_05.jpg', 
+      type: 'JPEG', 
+      size: '1.8 MB', 
+      date: '2023-10-09', 
+      tags: ['tracking', 'person'],
+      owner: { id: '4', name: 'Emily White', profileImage: '' } 
+    },
   ];
 
   const handleModelUpload = (file: File) => {
@@ -98,6 +138,14 @@ const Admin = () => {
     }
   };
 
+  const getInitials = (name: string) => {
+    return name
+      .split(' ')
+      .map(part => part[0])
+      .join('')
+      .toUpperCase();
+  };
+
   // Filter users based on search query
   const filteredUsers = dummyUsers.filter(user => 
     user.name.toLowerCase().includes(userSearchQuery.toLowerCase()) ||
@@ -109,7 +157,8 @@ const Admin = () => {
   const filteredImages = dummyImages.filter(image => 
     image.name.toLowerCase().includes(dataSearchQuery.toLowerCase()) ||
     image.type.toLowerCase().includes(dataSearchQuery.toLowerCase()) ||
-    image.tags.some(tag => tag.toLowerCase().includes(dataSearchQuery.toLowerCase()))
+    image.tags.some(tag => tag.toLowerCase().includes(dataSearchQuery.toLowerCase())) ||
+    image.owner.name.toLowerCase().includes(dataSearchQuery.toLowerCase())
   );
 
   return (
@@ -278,7 +327,7 @@ const Admin = () => {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Name</TableHead>
+                      <TableHead>User</TableHead>
                       <TableHead>Email</TableHead>
                       <TableHead>Role</TableHead>
                       <TableHead>Last Active</TableHead>
@@ -295,7 +344,18 @@ const Admin = () => {
                     ) : (
                       filteredUsers.map((user) => (
                         <TableRow key={user.id}>
-                          <TableCell className="font-medium">{user.name}</TableCell>
+                          <TableCell>
+                            <div className="flex items-center gap-2">
+                              <Avatar className="h-8 w-8">
+                                {user.profileImage ? (
+                                  <AvatarImage src={user.profileImage} alt={user.name} />
+                                ) : (
+                                  <AvatarFallback>{getInitials(user.name)}</AvatarFallback>
+                                )}
+                              </Avatar>
+                              <span className="font-medium">{user.name}</span>
+                            </div>
+                          </TableCell>
                           <TableCell>{user.email}</TableCell>
                           <TableCell>
                             <div className="flex items-center gap-1">
@@ -375,6 +435,17 @@ const Admin = () => {
                         <span>{image.type}</span>
                         <span>{image.size}</span>
                         <span>{image.date}</span>
+                      </div>
+                      
+                      <div className="flex items-center gap-2 mt-3 pt-3 border-t">
+                        <Avatar className="h-6 w-6">
+                          {image.owner.profileImage ? (
+                            <AvatarImage src={image.owner.profileImage} alt={image.owner.name} />
+                          ) : (
+                            <AvatarFallback>{getInitials(image.owner.name)}</AvatarFallback>
+                          )}
+                        </Avatar>
+                        <span className="text-sm">{image.owner.name}</span>
                       </div>
                     </CardContent>
                     <CardFooter className="pt-0 flex justify-between">
