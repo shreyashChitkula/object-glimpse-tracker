@@ -318,49 +318,65 @@ export function AuthForm() {
                   onChange={handleChange}
                   className="transition-all"
                 />
-                <div className="mt-3 space-y-2">
-                  <p className="text-sm font-medium mb-1">Password requirements:</p>
-                  <div className="grid grid-cols-1 gap-2">
-                    <div className="flex items-center">
+                <div className="mt-3 space-y-1">
+                  <p className="text-sm font-medium mb-2">Password requirements:</p>
+                  <div className="grid grid-cols-1 gap-2 bg-muted/50 p-3 rounded-md">
+                    <div className="flex items-center space-x-2">
                       {passwordValidation.length ? (
-                        <Check className="h-4 w-4 mr-2 text-green-500" />
+                        <div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <Check className="h-3 w-3 text-green-500" />
+                        </div>
                       ) : (
-                        <X className="h-4 w-4 mr-2 text-destructive" />
+                        <div className="h-5 w-5 rounded-full bg-destructive/20 flex items-center justify-center">
+                          <X className="h-3 w-3 text-destructive" />
+                        </div>
                       )}
-                      <span className={`text-sm ${passwordValidation.length ? "text-green-500" : "text-destructive"}`}>
+                      <span className={`text-sm ${passwordValidation.length ? "text-green-500" : "text-muted-foreground"}`}>
                         At least 8 characters
                       </span>
                     </div>
                     
-                    <div className="flex items-center">
+                    <div className="flex items-center space-x-2">
                       {passwordValidation.uppercase ? (
-                        <Check className="h-4 w-4 mr-2 text-green-500" />
+                        <div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <Check className="h-3 w-3 text-green-500" />
+                        </div>
                       ) : (
-                        <X className="h-4 w-4 mr-2 text-destructive" />
+                        <div className="h-5 w-5 rounded-full bg-destructive/20 flex items-center justify-center">
+                          <X className="h-3 w-3 text-destructive" />
+                        </div>
                       )}
-                      <span className={`text-sm ${passwordValidation.uppercase ? "text-green-500" : "text-destructive"}`}>
+                      <span className={`text-sm ${passwordValidation.uppercase ? "text-green-500" : "text-muted-foreground"}`}>
                         At least one uppercase letter
                       </span>
                     </div>
                     
-                    <div className="flex items-center">
+                    <div className="flex items-center space-x-2">
                       {passwordValidation.number ? (
-                        <Check className="h-4 w-4 mr-2 text-green-500" />
+                        <div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <Check className="h-3 w-3 text-green-500" />
+                        </div>
                       ) : (
-                        <X className="h-4 w-4 mr-2 text-destructive" />
+                        <div className="h-5 w-5 rounded-full bg-destructive/20 flex items-center justify-center">
+                          <X className="h-3 w-3 text-destructive" />
+                        </div>
                       )}
-                      <span className={`text-sm ${passwordValidation.number ? "text-green-500" : "text-destructive"}`}>
+                      <span className={`text-sm ${passwordValidation.number ? "text-green-500" : "text-muted-foreground"}`}>
                         At least one number
                       </span>
                     </div>
                     
-                    <div className="flex items-center">
+                    <div className="flex items-center space-x-2">
                       {passwordValidation.specialChar ? (
-                        <Check className="h-4 w-4 mr-2 text-green-500" />
+                        <div className="h-5 w-5 rounded-full bg-green-500/20 flex items-center justify-center">
+                          <Check className="h-3 w-3 text-green-500" />
+                        </div>
                       ) : (
-                        <X className="h-4 w-4 mr-2 text-destructive" />
+                        <div className="h-5 w-5 rounded-full bg-destructive/20 flex items-center justify-center">
+                          <X className="h-3 w-3 text-destructive" />
+                        </div>
                       )}
-                      <span className={`text-sm ${passwordValidation.specialChar ? "text-green-500" : "text-destructive"}`}>
+                      <span className={`text-sm ${passwordValidation.specialChar ? "text-green-500" : "text-muted-foreground"}`}>
                         At least one special character (@, $, !, %, *, ?, &)
                       </span>
                     </div>

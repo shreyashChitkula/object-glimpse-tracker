@@ -10,15 +10,18 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { useToast } from '@/hooks/use-toast';
 import { 
   Loader2, Upload, Trash2, Database, Users, Box, 
-  UserRoundPlus, Search, MoreVertical, Edit, ShieldCheck, ShieldX, User
+  UserRoundPlus, Search, MoreVertical, Edit, ShieldCheck, ShieldX, User, LogOut
 } from 'lucide-react';
 import { UploadArea } from '@/components/upload/UploadArea';
 import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { useNavigate } from 'react-router-dom';
+import axios from 'axios';
 
 const Admin = () => {
-  const { user } = useUser();
+  const { user, logoutUser } = useUser();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
   const [modelName, setModelName] = useState('');
   const [modelFile, setModelFile] = useState<File | null>(null);
@@ -161,6 +164,43 @@ const Admin = () => {
     image.owner.name.toLowerCase().includes(dataSearchQuery.toLowerCase())
   );
 
+  const handleLogout = async () => {
+    try {
+      // Call backend logout endpoint
+      await axios.post(
+        `${import.meta.env.VITE_BACKEND_URL}/auth/signout`,
+        {},
+        {
+          withCredentials: true,
+        }
+      );
+
+      // Remove token cookie
+      document.cookie =
+        "token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;";
+
+      // Update context
+      logoutUser();
+
+      // Show success toast
+      toast({
+        title: "Success",
+        description: "Logged out successfully",
+      });
+
+      // Redirect to home page
+      navigate("/");
+    } catch (error) {
+      console.error("Logout failed:", error);
+      // Show error toast
+      toast({
+        title: "Error",
+        description: "Failed to logout",
+        variant: "destructive",
+      });
+    }
+  };
+
   return (
     <div className="container py-10 max-w-7xl mx-auto min-h-screen">
       <Helmet>
@@ -168,11 +208,21 @@ const Admin = () => {
       </Helmet>
       
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome, {user?.fullName}. Manage your application settings and resources.
-          </p>
+        <div className="flex items-center justify-between">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+            <p className="text-muted-foreground">
+              Welcome, {user?.fullName}. Manage your application settings and resources.
+            </p>
+          </div>
+          <Button 
+            variant="outline" 
+            onClick={handleLogout} 
+            className="flex items-center gap-2"
+          >
+            <LogOut className="h-4 w-4" />
+            Logout
+          </Button>
         </div>
         
         <Tabs defaultValue="models" className="space-y-4">
