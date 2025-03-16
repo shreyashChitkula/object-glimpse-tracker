@@ -103,13 +103,13 @@ const Index = () => {
           </div>
         </div>
 
-        {/* Preview Image - Now with GIF */}
+        {/* Preview Image - First GIF */}
         <div className="container px-4 pb-20 md:pb-32">
           <div className="w-full max-w-5xl mx-auto mt-10 glass-card overflow-hidden">
             <AspectRatio ratio={16 / 9} className="w-full">
               <img
-                src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExcnY0NzVkMTcwdG9rZjIyOXF1OGxmcGZjYWJjbjU5NnRzaXFiNXdxMSZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/3oKIPiOSxivAhbDpq8/giphy.gif"
-                alt="Object detection demonstration"
+                src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExNmZiMjBiZjM0ZmM1ZjE4ZDM4ZjJkZjM4ZjJkZjM4ZjJkZjM4ZjJkZg/l0HlKQPTHOGNUPTZm/giphy.gif"
+                alt="Real-time object detection demonstration"
                 className="w-full h-full object-cover"
               />
             </AspectRatio>
@@ -199,8 +199,8 @@ const Index = () => {
             <div className="w-full md:w-1/2 aspect-video rounded-lg shadow-lg overflow-hidden">
               <AspectRatio ratio={16 / 9} className="w-full">
                 <img
-                  src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExMHdtMmxzc2loeXd6cHNsbWZ5MmJvbGw5bDczd3cxMTBsMnVncTgybiZlcD12MV9pbnRlcm5hbF9naWZfYnlfaWQmY3Q9Zw/RBLigAZ2WN9S6cUvXR/giphy.gif"
-                  alt="Object tracking in adverse weather"
+                  src="https://media.giphy.com/media/v1.Y2lkPTc5MGI3NjExOTQ3YzJlNjQtZjg0Ny00NzIxLWE1ZDUtNzY0ZDY2YjQ0NzIx/3o7btOtfwq4iFqBWBW/giphy.gif"
+                  alt="Object detection in action"
                   className="w-full h-full object-cover"
                 />
               </AspectRatio>

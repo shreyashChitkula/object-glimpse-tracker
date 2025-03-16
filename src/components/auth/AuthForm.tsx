@@ -15,7 +15,7 @@ import {
 import { useToast } from "@/hooks/use-toast";
 import { Loader2 } from "lucide-react";
 import axios from "axios";
-import { useUser } from '@/context/UserContext';
+import { useUser } from "@/context/UserContext";
 
 export function AuthForm() {
   const [searchParams] = useSearchParams();
@@ -34,10 +34,32 @@ export function AuthForm() {
     name: "",
   });
 
+  const [passwordValidation, setPasswordValidation] = useState({
+    length: false,
+    uppercase: false,
+    number: false,
+    specialChar: false,
+  });
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const { name, value } = e.target;
+
     setFormData({
       ...formData,
-      [e.target.name]: e.target.value,
+      [name]: value,
+    });
+
+    if (name === "password") {
+      validatePassword(value);
+    }
+  };
+
+  const validatePassword = (password: string) => {
+    setPasswordValidation({
+      length: password.length >= 8,
+      uppercase: /[A-Z]/.test(password),
+      number: /\d/.test(password),
+      specialChar: /[@$!%*?&]/.test(password),
     });
   };
 
@@ -111,6 +133,17 @@ export function AuthForm() {
 
   const handleRegister = async (e) => {
     e.preventDefault();
+
+    const { length, uppercase, number, specialChar } = passwordValidation;
+    if (!length || !uppercase || !number || !specialChar) {
+      toast({
+        title: "Error",
+        description:
+          "Password must be at least 8 characters long, include an uppercase letter, a number, and a special character.",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (formData.password !== formData.confirmPassword) {
       toast({
@@ -284,6 +317,38 @@ export function AuthForm() {
                   onChange={handleChange}
                   className="transition-all"
                 />
+                <ul className="text-sm mt-2">
+                  <li
+                    className={
+                      passwordValidation.length ? "text-green-500" : "text-red-500"
+                    }
+                  >
+                    • At least 8 characters
+                  </li>
+                  <li
+                    className={
+                      passwordValidation.uppercase ? "text-green-500" : "text-red-500"
+                    }
+                  >
+                    • At least one uppercase letter
+                  </li>
+                  <li
+                    className={
+                      passwordValidation.number ? "text-green-500" : "text-red-500"
+                    }
+                  >
+                    • At least one number
+                  </li>
+                  <li
+                    className={
+                      passwordValidation.specialChar
+                        ? "text-green-500"
+                        : "text-red-500"
+                    }
+                  >
+                    • At least one special character (@, $, !, %, *, ?, &)
+                  </li>
+                </ul>
               </div>
               <div className="space-y-2">
                 <Label htmlFor="confirmPassword">Confirm Password</Label>
