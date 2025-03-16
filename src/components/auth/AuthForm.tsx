@@ -1,4 +1,3 @@
-
 import React, { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { Button } from "@/components/ui/button";
@@ -70,28 +69,6 @@ export function AuthForm() {
     setError("");
 
     try {
-      // Special case for admin login demonstration
-      if (formData.email === "admin@example.com" && formData.password === "admin123") {
-        // Mock admin user login
-        const adminUser = {
-          id: "admin-id",
-          fullName: "Admin User",
-          email: "admin@example.com",
-          role: "admin" as "admin" // Type assertion to fix the TS error
-        };
-        
-        registerUser(adminUser);
-        
-        toast({
-          title: "Admin Login",
-          description: "You've been logged in as an administrator.",
-        });
-        
-        navigate("/admin");
-        return;
-      }
-
-      // Regular user login process
       const response = await axios.post(
         `${import.meta.env.VITE_BACKEND_URL}/auth/signin`,
         formData,
@@ -104,11 +81,9 @@ export function AuthForm() {
         throw new Error(response.data.error || "Login failed");
       }
 
-      // Add role property to user object if not present
-      const userData = {
-        ...response.data.user,
-        role: (response.data.user.role || "user") as "user" | "admin" // Type assertion to fix the TS error
-      };
+      // Extract only the required details for the user interface
+      const { _id, fullName, email, role } = response.data.user;
+      const userData = { id:_id, fullName, email, role };
 
       toast({
         title: "Success",
@@ -118,7 +93,8 @@ export function AuthForm() {
       // Register user in context
       registerUser(userData);
 
-      navigate("/");
+      // Navigate based on user role
+      userData.role === "admin" ? navigate("/admin") : navigate("/");
     } catch (err: any) {
       setError(err.message);
       toast({
