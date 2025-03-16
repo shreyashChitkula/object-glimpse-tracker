@@ -3,7 +3,7 @@ import { Link, useLocation } from "react-router-dom";
 import { cn } from "@/lib/utils";
 import { Button } from "@/components/ui/button";
 import { Sheet, SheetContent, SheetTrigger } from "@/components/ui/sheet";
-import { Menu, X, Camera, UserCircle2, Image } from "lucide-react";
+import { Menu, X, Camera, UserCircle2, Image, Shield } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { ThemeSwitcher } from "@/components/theme/ThemeSwitcher";
 import { useUser } from "@/context/UserContext";
@@ -22,23 +22,35 @@ export function Navbar() {
   const location = useLocation();
   const isMobile = useIsMobile();
   const [isOpen, setIsOpen] = useState(false);
-  const { user, isAuthenticated, logoutUser } = useUser();
+  const { user, isAuthenticated, logoutUser, isAdmin } = useUser();
   const { toast } = useToast();
 
-  const navItems: NavItem[] = isAuthenticated
-    ? [
-        { title: "Home", href: "/" },
-        { title: "Dashboard", href: "/dashboard" },
-        {
-          title: "Gallery",
-          href: "/gallery",
-          icon: <Image className="h-4 w-4 mr-2" />,
-        },
-      ]
-    : [
-        { title: "Home", href: "/" },
-        { title: "Dashboard", href: "/dashboard" },
-      ];
+  const getNavItems = () => {
+    const items: NavItem[] = [
+      { title: "Home", href: "/" },
+      { title: "Dashboard", href: "/dashboard" },
+    ];
+
+    if (isAuthenticated) {
+      items.push({
+        title: "Gallery",
+        href: "/gallery",
+        icon: <Image className="h-4 w-4 mr-2" />,
+      });
+
+      if (isAdmin()) {
+        items.push({
+          title: "Admin",
+          href: "/admin",
+          icon: <Shield className="h-4 w-4 mr-2" />,
+        });
+      }
+    }
+
+    return items;
+  };
+
+  const navItems = getNavItems();
 
   useEffect(() => {
     const handleScroll = () => {
