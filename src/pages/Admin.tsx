@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -8,13 +9,12 @@ import { Label } from '@/components/ui/label';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, Upload, Trash2, Database, Users, Box } from 'lucide-react';
+import { Loader2, Upload, Trash2, Database, Users, Box, User, LogOut } from 'lucide-react';
 import { UploadArea } from '@/components/upload/UploadArea';
 import axios from 'axios';
 import { FileUploadArea } from '@/components/upload/FileUploadArea';
 import { format } from 'date-fns';
 
-// Add interface for model type
 interface Model {
   _id: string;
   modelName: string;
@@ -28,6 +28,7 @@ interface Model {
 const Admin = () => {
   const { user } = useUser();
   const { toast } = useToast();
+  const navigate = useNavigate();
   const [uploading, setUploading] = useState(false);
   const [modelName, setModelName] = useState('');
   const [modelFile, setModelFile] = useState<File | null>(null);
@@ -80,11 +81,9 @@ const Admin = () => {
         description: "Model uploaded successfully",
       });
 
-      // Reset form
       setSelectedFile(null);
       setModelName("");
       setModelType("");
-      
     } catch (error) {
       console.error("Error uploading model:", error);
       toast({
@@ -95,7 +94,6 @@ const Admin = () => {
     }
   };
 
-  // Add function to fetch models
   const fetchModels = async () => {
     try {
       const response = await axios.get(
@@ -130,7 +128,6 @@ const Admin = () => {
           title: "Success",
           description: "Model deleted successfully",
         });
-        // Refresh the models list
         fetchModels();
       }
     } catch (error) {
@@ -143,7 +140,14 @@ const Admin = () => {
     }
   };
 
-  // Fetch models on component mount
+  const handleSwitchToUserMode = () => {
+    navigate('/');
+    toast({
+      title: "Mode Switched",
+      description: "You've switched to user mode",
+    });
+  };
+
   useEffect(() => {
     fetchModels();
   }, []);
@@ -155,11 +159,24 @@ const Admin = () => {
       </Helmet>
       
       <div className="flex flex-col gap-6">
-        <div className="flex flex-col gap-2">
-          <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
-          <p className="text-muted-foreground">
-            Welcome, {user?.fullName}. Manage your application settings and resources.
-          </p>
+        <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+            <p className="text-muted-foreground">
+              Welcome, {user?.fullName}. Manage your application settings and resources.
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              onClick={handleSwitchToUserMode}
+              className="flex items-center gap-2"
+            >
+              <User className="h-4 w-4" />
+              Switch to User Mode
+            </Button>
+          </div>
         </div>
         
         <Tabs defaultValue="models" className="space-y-4">
@@ -310,7 +327,6 @@ const Admin = () => {
                         variant="destructive" 
                         size="sm"
                         onClick={() => {
-                          // Show confirmation dialog before deleting
                           if (window.confirm('Are you sure you want to delete this model?')) {
                             handleDeleteModel(model._id);
                           }
