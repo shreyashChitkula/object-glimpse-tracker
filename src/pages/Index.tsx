@@ -94,11 +94,15 @@ const Index = () => {
                   Try Detection <ArrowRight className="h-4 w-4" />
                 </Button>
               </Link>
-              <Link to="/auth?mode=register">
-                <Button variant="outline" size="lg">
-                  Create Account
-                </Button>
-              </Link>
+              {!isAuthenticated ? (
+                <Link to="/auth?mode=register">
+                  <Button variant="outline" size="lg">
+                    Create Account
+                  </Button>
+                </Link>
+              ) : (
+                <span></span>
+              )}
             </div>
           </div>
         </div>
