@@ -53,8 +53,6 @@ export function Navbar() {
   const navItems = getNavItems();
 
   useEffect(() => {
-    console.log("isAdmin", isAdmin());
-    console.log("isAuthenticated", isAuthenticated);
     const handleScroll = () => {
       setIsScrolled(window.scrollY > 10);
     };
