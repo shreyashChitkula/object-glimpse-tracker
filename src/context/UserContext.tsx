@@ -4,7 +4,6 @@ interface User {
   id?: string;
   fullName?: string;
   email?: string;
-  profilePicture?: string;
   role?: 'user' | 'admin';
 }
 
