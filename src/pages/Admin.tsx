@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
+import { useNavigate } from 'react-router-dom';
 import { useUser } from '@/context/UserContext';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
@@ -20,7 +21,6 @@ import axios from 'axios';
 import { FileUploadArea } from '@/components/upload/FileUploadArea';
 import { format } from 'date-fns';
 
-// Add interface for model type
 interface Model {
   _id: string;
   modelName: string;
@@ -156,7 +156,6 @@ const Admin = () => {
         description: "Model uploaded successfully",
       });
 
-      // Reset form
       setSelectedFile(null);
       setModelName("");
       setModelType("");
@@ -319,6 +318,24 @@ const Admin = () => {
             <LogOut className="h-4 w-4" />
             Logout
           </Button>
+        <div className="flex justify-between items-center">
+          <div className="flex flex-col gap-2">
+            <h1 className="text-3xl font-bold tracking-tight">Admin Dashboard</h1>
+            <p className="text-muted-foreground">
+              Welcome, {user?.fullName}. Manage your application settings and resources.
+            </p>
+          </div>
+          
+          <div className="flex items-center gap-3">
+            <Button 
+              variant="outline" 
+              onClick={handleSwitchToUserMode}
+              className="flex items-center gap-2"
+            >
+              <User className="h-4 w-4" />
+              Switch to User Mode
+            </Button>
+          </div>
         </div>
         
         <Tabs defaultValue="models" className="space-y-4">
@@ -470,7 +487,6 @@ const Admin = () => {
                         variant="destructive" 
                         size="sm"
                         onClick={() => {
-                          // Show confirmation dialog before deleting
                           if (window.confirm('Are you sure you want to delete this model?')) {
                             handleDeleteModel(model._id);
                           }
