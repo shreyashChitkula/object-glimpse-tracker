@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { Navbar } from "@/components/layout/Navbar";
@@ -5,42 +6,23 @@ import { Footer } from "@/components/layout/Footer";
 import { Button } from "@/components/ui/button";
 import { UploadArea } from "@/components/upload/UploadArea";
 import { Card, CardContent } from "@/components/ui/card";
-import { Image, Plus, ExternalLink } from "lucide-react";
+import { Image, Video, Plus, ExternalLink, Play } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import { useToast } from "@/hooks/use-toast";
 import axios from "axios";
 
-// Sample media data for demonstration
-const sampleMedia = [
-  {
-    id: "1",
-    name: "Traffic camera footage",
-    type: "image",
-    thumbnail:
-      "https://images.unsplash.com/photo-1505761671935-60b3a7427bad?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&q=80",
-    date: "2023-11-20",
-  },
-  {
-    id: "2",
-    name: "Highway surveillance",
-    type: "image",
-    thumbnail:
-      "https://images.unsplash.com/photo-1573400145000-43f242deb9c9?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&q=80",
-    date: "2023-11-18",
-  },
-  {
-    id: "3",
-    name: "Border security camera",
-    type: "image",
-    thumbnail:
-      "https://images.unsplash.com/photo-1519575706483-221027bfbb31?ixlib=rb-4.0.3&ixid=MnwxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8&auto=format&fit=crop&w=400&q=80",
-    date: "2023-11-15",
-  },
-];
+// Sample media data structure
+interface MediaItem {
+  id: string;
+  name: string;
+  type: 'image' | 'video';
+  thumbnail: string;
+  date: string;
+}
 
 const Gallery = () => {
   const [showUpload, setShowUpload] = useState(false);
-  const [userMedia, setUserMedia] = useState(sampleMedia);
+  const [userMedia, setUserMedia] = useState<MediaItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState("");
   const [isUploading, setIsUploading] = useState(false);
@@ -49,33 +31,33 @@ const Gallery = () => {
   const { toast } = useToast();
 
   useEffect(() => {
-    const fetchImages = async () => {
+    const fetchMedia = async () => {
       try {
         const response = await axios.get(
-          `${import.meta.env.VITE_BACKEND_URL}/auth/images_user`,
+          `${import.meta.env.VITE_BACKEND_URL}/auth/media_user`,
           {
             withCredentials: true,
           }
         );
-        const data = response.data.images;
-
+        
         // Map the API response to our gallery items format
-        const items = data.map((imageUrl: string, index: number) => ({
-          id: `img-${index}`,
-          name: `Image ${index + 1}`,
-          type: "image",
-          thumbnail: imageUrl,
-          date: new Date().toISOString().split("T")[0], // You can modify this if your API provides dates
+        // For now, assuming the API returns both images and videos with type field
+        const items = response.data.media.map((item: any, index: number) => ({
+          id: item.id || `media-${index}`,
+          name: item.name || `Media ${index + 1}`,
+          type: item.type || 'image',
+          thumbnail: item.url,
+          date: item.date || new Date().toISOString().split("T")[0],
         }));
 
         setUserMedia(items);
-        console.log("Fetched images:", items);
+        console.log("Fetched media:", items);
       } catch (err) {
-        setError("Failed to fetch images");
-        console.error("Error fetching images:", err);
+        setError("Failed to fetch media");
+        console.error("Error fetching media:", err);
         toast({
           title: "Error",
-          description: "Failed to load images. Please try again later.",
+          description: "Failed to load media items. Please try again later.",
           variant: "destructive",
         });
       } finally {
@@ -83,10 +65,10 @@ const Gallery = () => {
       }
     };
 
-    fetchImages();
+    fetchMedia();
   }, [toast]);
 
-  const handleMediaUpload = async (file: File) => {
+  const handleMediaUpload = async (file: File, mediaType: 'image' | 'video') => {
     if (!file) return;
 
     setIsUploading(true);
@@ -94,6 +76,7 @@ const Gallery = () => {
 
     const formData = new FormData();
     formData.append("file", file);
+    formData.append("type", mediaType);
 
     try {
       const response = await axios.post(
@@ -107,13 +90,13 @@ const Gallery = () => {
         }
       );
 
-      const newImageUrl = response.data.imageUrl;
+      const mediaUrl = response.data.mediaUrl || response.data.imageUrl;
       
       const newMedia = {
-        id: `img-${userMedia.length}`,
+        id: `media-${userMedia.length}`,
         name: file.name,
-        type: "image",
-        thumbnail: newImageUrl,
+        type: mediaType,
+        thumbnail: mediaUrl,
         date: new Date().toISOString().split("T")[0],
       };
 
@@ -122,13 +105,13 @@ const Gallery = () => {
 
       toast({
         title: "Success",
-        description: response.data.message || "Image uploaded successfully",
+        description: response.data.message || `${mediaType} uploaded successfully`,
       });
     } catch (error) {
-      console.error("Error uploading image:", error);
+      console.error(`Error uploading ${mediaType}:`, error);
       toast({
         title: "Error",
-        description: "Failed to upload image",
+        description: `Failed to upload ${mediaType}`,
         variant: "destructive",
       });
     } finally {
@@ -136,10 +119,9 @@ const Gallery = () => {
     }
   };
 
-  const handleMediaClick = (mediaId: string) => {
-    // In a real app, we would pass the media data to the detection page
-    // For now, we'll just navigate to the dashboard
-    navigate(`/dashboard?mediaURL=${mediaId}`);
+  const handleMediaClick = (media: MediaItem) => {
+    // Navigate to dashboard with media info
+    navigate(`/dashboard?mediaURL=${media.thumbnail}&mediaType=${media.type}`);
   };
 
   return (
@@ -177,7 +159,7 @@ const Gallery = () => {
 
             {showUpload && (
               <div className="animate-fade-in mb-6">
-                <UploadArea onImageUpload={handleMediaUpload} />
+                <UploadArea onMediaUpload={handleMediaUpload} />
               </div>
             )}
           </div>
@@ -197,14 +179,29 @@ const Gallery = () => {
                 <Card
                   key={media.id}
                   className="overflow-hidden group cursor-pointer hover:shadow-md transition-all"
-                  onClick={() => handleMediaClick(media.thumbnail)}
+                  onClick={() => handleMediaClick(media)}
                 >
                   <div className="relative aspect-video">
-                    <img
-                      src={media.thumbnail}
-                      alt={media.name}
-                      className="object-cover w-full h-full"
-                    />
+                    {media.type === 'image' ? (
+                      <img
+                        src={media.thumbnail}
+                        alt={media.name}
+                        className="object-cover w-full h-full"
+                      />
+                    ) : (
+                      <div className="relative w-full h-full bg-black">
+                        <video
+                          src={media.thumbnail}
+                          className="object-cover w-full h-full"
+                          preload="metadata"
+                        />
+                        <div className="absolute inset-0 flex items-center justify-center">
+                          <div className="bg-black/30 rounded-full p-3">
+                            <Play className="h-8 w-8 text-white" />
+                          </div>
+                        </div>
+                      </div>
+                    )}
                     <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end justify-end p-4">
                       <Button size="sm" variant="secondary" className="gap-1">
                         <ExternalLink className="h-4 w-4" />
@@ -213,7 +210,12 @@ const Gallery = () => {
                     </div>
                   </div>
                   <CardContent className="p-4">
-                    <h3 className="font-medium truncate">{media.name}</h3>
+                    <div className="flex items-center justify-between">
+                      <h3 className="font-medium truncate">{media.name}</h3>
+                      {media.type === 'video' && (
+                        <Video className="h-4 w-4 text-muted-foreground ml-2" />
+                      )}
+                    </div>
                     <p className="text-sm text-muted-foreground">
                       {media.date}
                     </p>

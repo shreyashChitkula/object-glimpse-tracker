@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { Navbar } from "@/components/layout/Navbar";
@@ -6,6 +7,7 @@ import { UploadArea } from "@/components/upload/UploadArea";
 import { ModelSelector } from "@/components/detection/ModelSelector";
 import { ResultDisplay } from "@/components/detection/ResultDisplay";
 import { PerformanceMetrics } from "@/components/detection/PerformanceMetrics";
+import { MediaPlayer } from "@/components/detection/MediaPlayer";
 import { Button } from "@/components/ui/button";
 import { Play, Pause, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
@@ -23,42 +25,30 @@ interface Model {
   };
 }
 
-// Sample detection data (would come from the ML model in a real app)
-const sampleDetections = [
-  {
-    id: "1",
-    label: "Person",
-    confidence: 0.92,
-    bbox: { x: 50, y: 100, width: 100, height: 200 },
-  },
-  {
-    id: "2",
-    label: "Car",
-    confidence: 0.87,
-    bbox: { x: 200, y: 150, width: 150, height: 100 },
-  },
-  {
-    id: "3",
-    label: "Bicycle",
-    confidence: 0.78,
-    bbox: { x: 400, y: 200, width: 80, height: 50 },
-  },
-];
+interface Detection {
+  id: string;
+  label: string;
+  confidence: number;
+  box: { x: number; y: number; width: number; height: number };
+  class: number;
+  class_name: string;
+}
 
 const Dashboard = () => {
   const [searchParams] = useSearchParams();
-  const imageUrlFromGallery = searchParams.get("mediaURL");
+  const mediaUrlFromGallery = searchParams.get("mediaURL");
+  const mediaTypeFromGallery = searchParams.get("mediaType") || "image";
 
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>("");
-  const [uploadedImage, setUploadedImage] = useState<string | null>(null);
+  const [uploadedMedia, setUploadedMedia] = useState<string | null>(null);
+  const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
   const [isProcessing, setIsProcessing] = useState(false);
-  const [detections, setDetections] = useState<typeof sampleDetections | null>(
-    null
-  );
+  const [detections, setDetections] = useState<Detection[] | null>(null);
   const [processingTime, setProcessingTime] = useState<number | null>(null);
   const [confidenceAvg, setConfidenceAvg] = useState<number | null>(null);
   const [fps, setFps] = useState<number | null>(null);
+  const [currentVideoTime, setCurrentVideoTime] = useState(0);
   const [originalDimensions, setOriginalDimensions] = useState<{
     width: number;
     height: number;
@@ -100,16 +90,18 @@ const Dashboard = () => {
     fetchModels();
   }, []);
 
-  // Load image from URL when component mounts
+  // Load media from URL when component mounts
   useEffect(() => {
-    if (imageUrlFromGallery) {
-      setUploadedImage(imageUrlFromGallery);
+    if (mediaUrlFromGallery) {
+      setUploadedMedia(mediaUrlFromGallery);
+      setMediaType(mediaTypeFromGallery as 'image' | 'video');
     }
-  }, [imageUrlFromGallery]);
+  }, [mediaUrlFromGallery, mediaTypeFromGallery]);
 
-  const handleImageUpload = (file: File) => {
-    const imageUrl = URL.createObjectURL(file);
-    setUploadedImage(imageUrl);
+  const handleMediaUpload = (file: File, type: 'image' | 'video') => {
+    const mediaUrl = URL.createObjectURL(file);
+    setUploadedMedia(mediaUrl);
+    setMediaType(type);
     setDetections(null);
     setProcessingTime(null);
     setConfidenceAvg(null);
@@ -118,17 +110,23 @@ const Dashboard = () => {
 
   const handleModelSelect = (modelId: string) => {
     setSelectedModel(modelId);
-    if (uploadedImage && detections) {
-      // If an image is already processed, reprocess with the new model
-      // handleProcessImage();
+    if (uploadedMedia && detections) {
+      // If media is already processed, reprocess with the new model
+      // handleProcessMedia();
     }
   };
 
-  const handleProcessImage = async () => {
-    if (!uploadedImage) {
+  const handleVideoTimeUpdate = (currentTime: number) => {
+    setCurrentVideoTime(currentTime);
+    // In a real implementation, we would query for detections at this timestamp
+    // or use a pre-processed detection timeline
+  };
+
+  const handleProcessMedia = async () => {
+    if (!uploadedMedia) {
       toast({
-        title: "No image selected",
-        description: "Please upload an image first.",
+        title: "No media selected",
+        description: "Please upload an image or video first.",
         variant: "destructive",
       });
       return;
@@ -137,45 +135,61 @@ const Dashboard = () => {
     setIsProcessing(true);
     setDetections(null);
     const model = models.find((m) => m.id === selectedModel)?.name;
-    console.log("imageURL", uploadedImage, "model", model);
+    console.log("mediaURL", uploadedMedia, "model", model, "type", mediaType);
+    
     try {
+      const endpoint = mediaType === 'image' 
+        ? `${import.meta.env.VITE_BACKEND_URL}/auth/detect`
+        : `${import.meta.env.VITE_BACKEND_URL}/auth/detect_video`;
+        
       const response = await axios.post(
-        `${import.meta.env.VITE_BACKEND_URL}/auth/detect`,
+        endpoint,
         {
-          imageUrl: uploadedImage,
+          mediaUrl: uploadedMedia,
           model,
+          ...(mediaType === 'video' && { currentTime: currentVideoTime }),
         },
         { withCredentials: true }
       );
 
-      console.log("detected responses", response.data);
+      console.log("detection response", response.data);
 
-      setDetections(response.data.detections);
+      // Transform the detections to match our interface
+      const transformedDetections: Detection[] = response.data.detections.map((det: any) => ({
+        id: det.id || String(Math.random()),
+        label: det.label || det.class_name,
+        confidence: det.confidence,
+        box: det.bbox || det.box,
+        class: det.class || 0,
+        class_name: det.class_name || det.label,
+      }));
+
+      setDetections(transformedDetections);
       setOriginalDimensions({
         width: response.data.original_width,
         height: response.data.original_height,
       });
 
       // Calculate metrics
-      if (response.data.detections.length > 0) {
+      if (transformedDetections.length > 0) {
         const avgConfidence =
-          response.data.detections.reduce(
+          transformedDetections.reduce(
             (acc: number, det: any) => acc + det.confidence,
             0
-          ) / response.data.detections.length;
+          ) / transformedDetections.length;
         setConfidenceAvg(avgConfidence);
       }
 
       // Optional: Show success toast
       toast({
         title: "Detection Complete",
-        description: `Found ${response.data.detections.length} objects`,
+        description: `Found ${transformedDetections.length} objects`,
       });
     } catch (error) {
-      console.error("Error processing image:", error);
+      console.error("Error processing media:", error);
       toast({
         title: "Error",
-        description: "Failed to process image",
+        description: "Failed to process media",
         variant: "destructive",
       });
     } finally {
@@ -187,7 +201,7 @@ const Dashboard = () => {
     if (!detections) {
       toast({
         title: "No data to download",
-        description: "Process an image first to generate a report.",
+        description: "Process media first to generate a report.",
         variant: "destructive",
       });
       return;
@@ -196,6 +210,7 @@ const Dashboard = () => {
     // Create a simple report text
     const reportLines = [
       `Object Detection Report - ${new Date().toLocaleString()}`,
+      `Media Type: ${mediaType}`,
       `Model: ${models.find((m) => m.id === selectedModel)?.name}`,
       `Processing Time: ${processingTime?.toFixed(2)} ms`,
       `Average Confidence: ${(confidenceAvg || 0) * 100}%`,
@@ -234,28 +249,29 @@ const Dashboard = () => {
                   Object Detection Dashboard
                 </h1>
                 <p className="text-muted-foreground mb-6">
-                  {!imageUrlFromGallery
-                    ? "Upload an image and run detection models"
-                    : "Image loaded from gallery. You can upload a different image or proceed with detection."}
+                  {!uploadedMedia
+                    ? "Upload media and run detection models"
+                    : `${mediaType === 'image' ? 'Image' : 'Video'} loaded from gallery. You can upload a different media or proceed with detection.`}
                 </p>
 
-                {imageUrlFromGallery ? (
-                  <div className="relative aspect-video w-full mb-6">
-                    <img
-                      src={imageUrlFromGallery}
-                      alt="Input image"
-                      className="object-contain w-full h-full rounded-lg border border-border"
+                {uploadedMedia ? (
+                  <div className="mb-6">
+                    <MediaPlayer 
+                      src={uploadedMedia} 
+                      type={mediaType} 
+                      isProcessing={isProcessing}
+                      onTimeUpdate={mediaType === 'video' ? handleVideoTimeUpdate : undefined}
                     />
                   </div>
                 ) : (
-                  <UploadArea onImageUpload={handleImageUpload} />
+                  <UploadArea onMediaUpload={handleMediaUpload} />
                 )}
 
                 <div className="mt-6 flex flex-wrap gap-3 justify-end">
                   <Button
                     className="gap-2"
-                    disabled={!uploadedImage || isProcessing}
-                    onClick={handleProcessImage}
+                    disabled={!uploadedMedia || isProcessing}
+                    onClick={handleProcessMedia}
                   >
                     {isProcessing ? (
                       <Pause className="h-4 w-4" />
@@ -278,9 +294,10 @@ const Dashboard = () => {
               </div>
 
               <ResultDisplay
-                imageUrl={uploadedImage}
+                imageUrl={uploadedMedia}
                 detections={detections}
                 isProcessing={isProcessing}
+                mediaType={mediaType}
               />
             </div>
 
