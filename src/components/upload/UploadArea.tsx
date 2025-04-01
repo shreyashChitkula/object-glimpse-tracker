@@ -52,6 +52,7 @@ export function UploadArea({
     
     // Check if the file is an image or video
     let type: 'image' | 'video';
+    console.log("File type:", file.type);
     
     if (file.type.startsWith('image/')) {
       type = 'image';

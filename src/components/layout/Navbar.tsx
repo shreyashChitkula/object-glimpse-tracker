@@ -28,7 +28,7 @@ export function Navbar() {
   const getNavItems = () => {
     const items: NavItem[] = [
       { title: "Home", href: "/" },
-      { title: "Dashboard", href: "/dashboard" },
+      // { title: "Dashboard", href: "/dashboard" },
     ];
 
     if (isAuthenticated) {

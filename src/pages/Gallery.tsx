@@ -39,6 +39,7 @@ const Gallery = () => {
             withCredentials: true,
           }
         );
+        console.log("API response:", response.data);
         
         // Map the API response to our gallery items format
         // For now, assuming the API returns both images and videos with type field
@@ -77,6 +78,7 @@ const Gallery = () => {
     const formData = new FormData();
     formData.append("file", file);
     formData.append("type", mediaType);
+    console.log("Uploading file:", formData);
 
     try {
       const response = await axios.post(

@@ -10,47 +10,98 @@ import { useToast } from '@/components/ui/use-toast';
 import jsPDF from 'jspdf';
 
 interface Detection {
-  box: number[];
+  id?: string;
+  label?: string;
+  box: { x: number; y: number; width: number; height: number } | number[];
   class: number;
   class_name: string;
   confidence: number;
 }
 
-interface ResultDisplayProps {
-  imageUrl: string | null;
-  detections: Detection[] | null;
-  isProcessing: boolean;
+interface FrameDetection {
+  frame: number;
+  detections: Detection[];
 }
 
-export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisplayProps) {
-  const imageRef = useRef<HTMLImageElement>(null);
+interface ResultDisplayProps {
+  mediaUrl: string | null;
+  detections: Detection[] | null;
+  frameDetections?: FrameDetection[] | null;
+  currentVideoTime?: number;
+  totalFrames?: number;
+  isProcessing: boolean;
+  mediaType: "image" | "video";
+  originalDimensions?: { width: number; height: number };
+}
+
+export function ResultDisplay({ 
+  mediaUrl, 
+  detections, 
+  frameDetections,
+  currentVideoTime = 0,
+  totalFrames = 0,
+  isProcessing, 
+  mediaType,
+  originalDimensions
+}: ResultDisplayProps) {
+  const mediaRef = useRef<HTMLImageElement | HTMLVideoElement>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const [imageDimensions, setImageDimensions] = useState<{ width: number; height: number } | null>(null);
+  const [mediaDimensions, setMediaDimensions] = useState<{ width: number; height: number } | null>(null);
   const [containerDimensions, setContainerDimensions] = useState<{ width: number; height: number } | null>(null);
   const [activeTab, setActiveTab] = useState("visualization");
   const [showBoxes, setShowBoxes] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
   const [hoveredDetection, setHoveredDetection] = useState<string | null>(null);
+  const [currentFrameDetections, setCurrentFrameDetections] = useState<Detection[] | null>(null);
   const { toast } = useToast();
 
   // Generate a color based on class ID
   const getColorForClass = (classId: number) => {
     const colors = [
-      "#FF5733", 
-      // "#33FF57", "#3357FF", "#F033FF", "#FF3366",
-      // "#33FFF5", "#F5FF33", "#FF8C33", "#8C33FF", "#33FF8C"
+      "#FF5733", "#33FF57", "#3357FF", "#F033FF", "#FF3366",
+      "#33FFF5", "#F5FF33", "#FF8C33", "#8C33FF", "#33FF8C"
     ];
     return colors[classId % colors.length];
   };
 
-  // Update dimensions when image loads or container resizes
+  // Get box coordinates in a consistent format
+  const getBoxCoordinates = (detection: Detection) => {
+    if (Array.isArray(detection.box)) {
+      return {
+        x1: detection.box[0],
+        y1: detection.box[1],
+        x2: detection.box[2],
+        y2: detection.box[3]
+      };
+    } else {
+      return {
+        x1: detection.box.x,
+        y1: detection.box.y,
+        x2: detection.box.x + detection.box.width,
+        y2: detection.box.y + detection.box.height
+      };
+    }
+  };
+
+  // Update dimensions when media loads or container resizes
   useEffect(() => {
     const updateDimensions = () => {
-      if (imageRef.current && containerRef.current) {
-        setImageDimensions({
-          width: imageRef.current.naturalWidth,
-          height: imageRef.current.naturalHeight
+      if (mediaRef.current && containerRef.current) {
+        // Handle both image and video elements
+        const width = mediaType === "image" 
+          ? (mediaRef.current as HTMLImageElement).naturalWidth 
+          : (mediaRef.current as HTMLVideoElement).videoWidth;
+        
+        const height = mediaType === "image" 
+          ? (mediaRef.current as HTMLImageElement).naturalHeight 
+          : (mediaRef.current as HTMLVideoElement).videoHeight;
+          
+        setMediaDimensions({
+          width: width || (originalDimensions?.width || 0),
+          height: height || (originalDimensions?.height || 0)
         });
+        
         setContainerDimensions({
           width: containerRef.current.offsetWidth,
           height: containerRef.current.offsetHeight
@@ -64,9 +115,13 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
       resizeObserver.observe(containerRef.current);
     }
 
-    // Update dimensions when image loads
-    if (imageRef.current) {
-      imageRef.current.addEventListener('load', updateDimensions);
+    // Update dimensions when media loads
+    if (mediaRef.current) {
+      if (mediaType === "image") {
+        (mediaRef.current as HTMLImageElement).addEventListener('load', updateDimensions);
+      } else {
+        (mediaRef.current as HTMLVideoElement).addEventListener('loadedmetadata', updateDimensions);
+      }
     }
 
     // Initial update
@@ -77,14 +132,37 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
       if (containerRef.current) {
         resizeObserver.unobserve(containerRef.current);
       }
-      if (imageRef.current) {
-        imageRef.current.removeEventListener('load', updateDimensions);
+      if (mediaRef.current) {
+        if (mediaType === "image") {
+          (mediaRef.current as HTMLImageElement).removeEventListener('load', updateDimensions);
+        } else {
+          (mediaRef.current as HTMLVideoElement).removeEventListener('loadedmetadata', updateDimensions);
+        }
       }
     };
-  }, [imageUrl]);
+  }, [mediaUrl, mediaType, originalDimensions]);
 
-  const handleSaveImage = async () => {
-    if (!containerRef.current || !detections) return;
+  // Update current frame detections based on video time
+  useEffect(() => {
+    if (mediaType === "video" && detections) {
+      // For video, we're already getting updated detections from the Dashboard component
+      setCurrentFrameDetections(detections);
+    } else if (mediaType === "image") {
+      // For images, use the regular detections
+      setCurrentFrameDetections(detections);
+    }
+  }, [mediaType, detections, currentVideoTime]);
+
+  // Update video time when currentVideoTime prop changes
+  useEffect(() => {
+    if (mediaType === "video" && videoRef.current && mediaUrl) {
+      // Set the current time of the video in the visualization tab
+      videoRef.current.currentTime = currentVideoTime;
+    }
+  }, [currentVideoTime, mediaType, mediaUrl]);
+
+  const handleSaveMedia = async () => {
+    if (!containerRef.current || (!detections && !currentFrameDetections)) return;
 
     try {
       const canvas = document.createElement('canvas');
@@ -99,9 +177,9 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
         canvas.height = img.height;
         ctx.drawImage(img, 0, 0);
 
-        if (showBoxes) {
-          detections.forEach((detection) => {
-            const [x1, y1, x2, y2] = detection.box;
+        if (showBoxes && currentFrameDetections) {
+          currentFrameDetections.forEach((detection) => {
+            const { x1, y1, x2, y2 } = getBoxCoordinates(detection);
             const color = getColorForClass(detection.class);
             
             // Draw box
@@ -113,7 +191,7 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
             if (showLabels) {
               ctx.fillStyle = color;
               ctx.font = '14px Arial';
-              const label = `${detection.class_name} (${Math.round(detection.confidence * 100)}%)`;
+              const label = `${detection.class_name || detection.label} (${Math.round(detection.confidence * 100)}%)`;
               const textWidth = ctx.measureText(label).width;
               
               ctx.fillRect(x1, y1 - 20, textWidth + 10, 20);
@@ -134,24 +212,27 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
           URL.revokeObjectURL(url);
           
           toast({
-            title: "Image saved",
-            description: "The image has been saved to your downloads folder",
+            title: "Result saved",
+            description: `The ${mediaType === "video" ? "frame" : "image"} has been saved to your downloads folder`,
           });
         }, 'image/png');
       };
 
-      img.src = imageUrl!;
+      img.src = mediaUrl!;
     } catch (error) {
       toast({
         title: "Error",
-        description: "Failed to save the image",
+        description: `Failed to save the ${mediaType === "video" ? "frame" : "image"}`,
         variant: "destructive",
       });
     }
   };
 
   const generatePDFReport = async () => {
-    if (!detections || !imageUrl) return;
+    if ((!detections && !currentFrameDetections) || !mediaUrl) return;
+    
+    const detectionsToUse = currentFrameDetections || detections;
+    if (!detectionsToUse) return;
 
     try {
       const pdf = new jsPDF();
@@ -160,7 +241,7 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
 
       // Add title
       pdf.setFontSize(20);
-      pdf.text('Object Detection Report', pageWidth / 2, yOffset, { align: 'center' });
+      pdf.text(`${mediaType === "image" ? "Image" : "Video"} Detection Report`, pageWidth / 2, yOffset, { align: 'center' });
       yOffset += 20;
 
       // Add timestamp
@@ -168,27 +249,27 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
       pdf.text(`Generated on: ${new Date().toLocaleString()}`, 20, yOffset);
       yOffset += 20;
 
-      // Create a canvas to draw the image with detections
+      // Create a canvas to draw the media with detections
       const canvas = document.createElement('canvas');
       const ctx = canvas.getContext('2d');
       if (!ctx) return;
 
-      // Load the image and draw it with detections
+      // Load the media and draw it with detections
       const img = new Image();
       img.crossOrigin = "anonymous";
       
       await new Promise((resolve, reject) => {
         img.onload = () => {
-          // Set canvas size to match image
+          // Set canvas size to match media
           canvas.width = img.width;
           canvas.height = img.height;
           
-          // Draw original image
+          // Draw original media
           ctx.drawImage(img, 0, 0);
 
           // Draw detections
-          detections.forEach((detection) => {
-            const [x1, y1, x2, y2] = detection.box;
+          detectionsToUse.forEach((detection) => {
+            const { x1, y1, x2, y2 } = getBoxCoordinates(detection);
             const color = getColorForClass(detection.class);
             
             // Draw bounding box
@@ -199,7 +280,7 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
             // Draw label
             ctx.fillStyle = color;
             ctx.font = '14px Arial';
-            const label = `${detection.class_name} (${Math.round(detection.confidence * 100)}%)`;
+            const label = `${detection.class_name || detection.label} (${Math.round(detection.confidence * 100)}%)`;
             const textWidth = ctx.measureText(label).width;
             
             ctx.fillRect(x1, y1 - 20, textWidth + 10, 20);
@@ -210,14 +291,14 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
           resolve(null);
         };
         img.onerror = reject;
-        img.src = imageUrl;
+        img.src = mediaUrl;
       });
 
       // Calculate dimensions to fit page width
       const imgWidth = pageWidth - 40;
       const imgHeight = (canvas.height * imgWidth) / canvas.width;
       
-      // Add the annotated image to PDF
+      // Add the annotated media to PDF
       pdf.addImage(canvas.toDataURL('image/jpeg'), 'JPEG', 20, yOffset, imgWidth, imgHeight);
       yOffset += imgHeight + 20;
 
@@ -228,7 +309,7 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
 
       pdf.setFontSize(12);
       // Group detections by class
-      const groupedDetections = detections.reduce((acc, det) => {
+      const groupedDetections = detectionsToUse.reduce((acc, det) => {
         acc[det.class_name] = (acc[det.class_name] || 0) + 1;
         return acc;
       }, {} as Record<string, number>);
@@ -250,7 +331,7 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
       yOffset += 10;
 
       pdf.setFontSize(12);
-      detections.forEach((detection, index) => {
+      detectionsToUse.forEach((detection, index) => {
         // Check if we need a new page
         if (yOffset > pdf.internal.pageSize.getHeight() - 20) {
           pdf.addPage();
@@ -259,9 +340,9 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
 
         const detectionInfo = [
           `Detection #${index + 1}:`,
-          `• Class: ${detection.class_name}`,
+          `• Class: ${detection.class_name || detection.label}`,
           `• Confidence: ${(detection.confidence * 100).toFixed(2)}%`,
-          `• Location: [${detection.box.map(n => Math.round(n)).join(', ')}]`,
+          `• Location: [${getBoxCoordinates(detection).x1}, ${getBoxCoordinates(detection).y1}, ${getBoxCoordinates(detection).x2}, ${getBoxCoordinates(detection).y2}]`,
         ].join('\n');
 
         pdf.text(detectionInfo, 20, yOffset);
@@ -309,18 +390,18 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
         <Button
           variant="secondary"
           size="sm"
-          onClick={handleSaveImage}
-          disabled={!detections || detections.length === 0}
+          onClick={handleSaveMedia}
+          disabled={!currentFrameDetections || currentFrameDetections.length === 0}
         >
           <Download className="h-4 w-4 mr-2" />
-          Save Image
+          Save {mediaType === "video" ? "Frame" : "Image"}
         </Button>
 
         <Button
           variant="secondary"
           size="sm"
           onClick={generatePDFReport}
-          disabled={!detections || detections.length === 0}
+          disabled={!currentFrameDetections || currentFrameDetections.length === 0}
         >
           <FileText className="h-4 w-4 mr-2" />
           Download Report
@@ -330,16 +411,21 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
   };
 
   const renderDetectionOverlays = () => {
-    if (!detections?.length || !imageDimensions || !containerDimensions || !showBoxes) {
+    if (!currentFrameDetections?.length || !showBoxes) {
       return null;
     }
 
-    return detections.map((detection, index) => {
-      const [x1, y1, x2, y2] = detection.box;
-      const scaledX = (x1 / imageDimensions.width) * 100;
-      const scaledY = (y1 / imageDimensions.height) * 100;
-      const scaledWidth = ((x2 - x1) / imageDimensions.width) * 100;
-      const scaledHeight = ((y2 - y1) / imageDimensions.height) * 100;
+    // Use original dimensions if available, otherwise fall back to measured dimensions
+    const width = originalDimensions?.width || mediaDimensions?.width || 1;
+    const height = originalDimensions?.height || mediaDimensions?.height || 1;
+
+    return currentFrameDetections.map((detection, index) => {
+      const { x1, y1, x2, y2 } = getBoxCoordinates(detection);
+      
+      const scaledX = (x1 / width) * 100;
+      const scaledY = (y1 / height) * 100;
+      const scaledWidth = ((x2 - x1) / width) * 100;
+      const scaledHeight = ((y2 - y1) / height) * 100;
       const color = getColorForClass(detection.class);
 
       return (
@@ -352,20 +438,22 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
             width: `${scaledWidth}%`,
             height: `${scaledHeight}%`,
             border: `2px solid ${color}`,
+            pointerEvents: 'none',
           }}
         >
           {showLabels && (
             <span
-              className="absolute text-xs px-1 py-0.5 rounded detection-label"
+              className="absolute text-xs px-1 py-0.5 rounded detection-label whitespace-nowrap"
               style={{ 
                 backgroundColor: color,
                 color: 'white',
                 left: 0,
                 top: 0,
-                transform: 'translateY(-100%)'
+                transform: 'translateY(-100%)',
+                pointerEvents: 'none',
               }}
             >
-              {`${detection.class_name} (${Math.round(detection.confidence * 100)}%)`}
+              {`${detection.class_name || detection.label} (${Math.round(detection.confidence * 100)}%)`}
             </span>
           )}
         </div>
@@ -378,7 +466,7 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
   };
 
   const renderDetectionsList = () => {
-    if (!detections?.length) {
+    if (!currentFrameDetections?.length) {
       return (
         <div className="text-center text-muted-foreground py-8">
           No detections found
@@ -387,7 +475,7 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
     }
 
     // Group detections by class
-    const groupedDetections = detections.reduce((acc, det) => {
+    const groupedDetections = currentFrameDetections.reduce((acc, det) => {
       if (!acc[det.class_name]) {
         acc[det.class_name] = [];
       }
@@ -397,6 +485,12 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
 
     return (
       <div className="space-y-4">
+        {mediaType === "video" && (
+          <div className="mb-4 p-2 bg-muted/50 rounded-md text-sm">
+            Showing detections for frame at time: {currentVideoTime.toFixed(2)}s
+          </div>
+        )}
+        
         {Object.entries(groupedDetections).map(([className, items]) => (
           <div key={className} className="border rounded-lg p-4">
             <div className="flex items-center justify-between mb-2">
@@ -418,7 +512,7 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
                     </Badge>
                   </div>
                   <div className="mt-1 text-xs">
-                    Location: [{detection.box.map(n => Math.round(n)).join(', ')}]
+                    Location: [{getBoxCoordinates(detection).x1}, {getBoxCoordinates(detection).y1}, {getBoxCoordinates(detection).x2}, {getBoxCoordinates(detection).y2}]
                   </div>
                 </div>
               ))}
@@ -429,12 +523,12 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
     );
   };
 
-  if (!imageUrl) {
+  if (!mediaUrl) {
     return (
       <Card className="h-[400px] flex items-center justify-center bg-muted/30">
         <div className="text-center text-muted-foreground">
           <Search className="h-10 w-10 mb-2 mx-auto opacity-20" />
-          <p>Upload an image to see detection results</p>
+          <p>Upload media to see detection results</p>
         </div>
       </Card>
     );
@@ -445,7 +539,7 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
       <CardHeader className="pb-3">
         <CardTitle className="flex items-center gap-2 text-lg">
           <Eye className="h-4 w-4" />
-          Detection Results
+          Detection Results {mediaType === "video" && "- Video"}
         </CardTitle>
       </CardHeader>
       <CardContent>
@@ -468,19 +562,36 @@ export function ResultDisplay({ imageUrl, detections, isProcessing }: ResultDisp
                   <Skeleton className="h-full w-full" />
                   <div className="absolute inset-0 flex flex-col items-center justify-center bg-background/80">
                     <Progress value={45} className="w-40 mb-3" />
-                    <p className="text-sm text-muted-foreground">Processing image...</p>
+                    <p className="text-sm text-muted-foreground">Processing {mediaType}...</p>
                   </div>
                 </div>
               ) : (
-                <>
-                  <img
-                    ref={imageRef}
-                    src={imageUrl}
-                    alt="Detection result"
-                    className="w-full h-auto rounded-lg"
-                  />
+                <div className="relative">
+                  {mediaType === "image" ? (
+                    <img
+                      ref={mediaRef as React.RefObject<HTMLImageElement>}
+                      src={mediaUrl!}
+                      alt="Detection result"
+                      className="w-full h-auto rounded-lg"
+                    />
+                  ) : (
+                    // For video, we embed a second video element without controls
+                    // This will be synchronized with the main player
+                    <video
+                      ref={videoRef}
+                      src={mediaUrl!}
+                      className="w-full rounded-lg"
+                      style={originalDimensions ? {
+                        aspectRatio: `${originalDimensions.width}/${originalDimensions.height}`
+                      } : undefined}
+                      playsInline
+                      muted
+                      // We don't add controls here as we don't want to have duplicate controls
+                      // The main video player in Dashboard has controls, and this one is just for visualization
+                    />
+                  )}
                   {renderDetectionOverlays()}
-                </>
+                </div>
               )}
             </div>
             {renderControls()}

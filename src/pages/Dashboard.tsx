@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { Navbar } from "@/components/layout/Navbar";
@@ -14,17 +13,30 @@ import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 
+// interface Model {
+//   id: string;
+//   name: string;
+//   description: string;
+//   recommended?: boolean;
+//   performance: {
+//     speed: number;
+//     accuracy: number;
+//   };
+// }
+
 interface Model {
   id: string;
   name: string;
+  type: string;
   description: string;
-  recommended?: boolean;
-  performance: {
+  modelUrl: string;
+  uploadedBy: string;
+  uploadDate: string;
+  performance?: {
     speed: number;
     accuracy: number;
   };
 }
-
 interface Detection {
   id: string;
   label: string;
@@ -42,7 +54,7 @@ const Dashboard = () => {
   const [models, setModels] = useState<Model[]>([]);
   const [selectedModel, setSelectedModel] = useState<string>("");
   const [uploadedMedia, setUploadedMedia] = useState<string | null>(null);
-  const [mediaType, setMediaType] = useState<'image' | 'video'>('image');
+  const [mediaType, setMediaType] = useState<"image" | "video">("image");
   const [isProcessing, setIsProcessing] = useState(false);
   const [detections, setDetections] = useState<Detection[] | null>(null);
   const [processingTime, setProcessingTime] = useState<number | null>(null);
@@ -53,6 +65,8 @@ const Dashboard = () => {
     width: number;
     height: number;
   } | null>(null);
+  const [frameDetections, setFrameDetections] = useState<any[] | null>(null);
+  const [totalFrames, setTotalFrames] = useState<number | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -63,15 +77,18 @@ const Dashboard = () => {
           { withCredentials: true }
         );
 
-        // Transform the backend data to include random performance metrics
+        // Transform the backend data to match our interface
         const modelsWithMetrics = response.data.map((model: any) => ({
           id: model.name.toLowerCase(),
           name: model.name,
-          description: `${model.name} model for object detection`,
-          recommended: Math.random() > 0.8, // 20% chance of being recommended
+          type: model.type,
+          description: model.description,
+          modelUrl: model.modelUrl,
+          uploadedBy: model.uploadedBy,
+          uploadDate: model.uploadDate,
           performance: {
-            speed: Math.floor(Math.random() * 60) + 40, // Random speed between 40-100
-            accuracy: Math.floor(Math.random() * 30) + 70, // Random accuracy between 70-100
+            speed: Math.floor(Math.random() * 60) + 40,
+            accuracy: Math.floor(Math.random() * 30) + 70,
           },
         }));
 
@@ -94,11 +111,11 @@ const Dashboard = () => {
   useEffect(() => {
     if (mediaUrlFromGallery) {
       setUploadedMedia(mediaUrlFromGallery);
-      setMediaType(mediaTypeFromGallery as 'image' | 'video');
+      setMediaType(mediaTypeFromGallery as "image" | "video");
     }
   }, [mediaUrlFromGallery, mediaTypeFromGallery]);
 
-  const handleMediaUpload = (file: File, type: 'image' | 'video') => {
+  const handleMediaUpload = (file: File, type: "image" | "video") => {
     const mediaUrl = URL.createObjectURL(file);
     setUploadedMedia(mediaUrl);
     setMediaType(type);
@@ -118,8 +135,35 @@ const Dashboard = () => {
 
   const handleVideoTimeUpdate = (currentTime: number) => {
     setCurrentVideoTime(currentTime);
-    // In a real implementation, we would query for detections at this timestamp
-    // or use a pre-processed detection timeline
+    
+    // Get the corresponding detections for the current video frame
+    if (frameDetections && totalFrames) {
+      // Calculate which frame index corresponds to current time
+      const videoElement = document.querySelector('video');
+      const duration = videoElement?.duration || 0;
+      
+      if (duration > 0 && totalFrames > 0) {
+        const frameIndex = Math.min(
+          Math.floor((currentTime / duration) * totalFrames),
+          frameDetections.length - 1
+        );
+        
+        // Update detections based on current frame
+        if (frameDetections[frameIndex]?.detections) {
+          const currentFrameDetections = frameDetections[frameIndex].detections.map(
+            (det: any) => ({
+              id: String(Math.random()),
+              label: det.class_name,
+              confidence: det.confidence,
+              box: det.box,
+              class: det.class || 0,
+              class_name: det.class_name,
+            })
+          );
+          setDetections(currentFrameDetections);
+        }
+      }
+    }
   };
 
   const handleProcessMedia = async () => {
@@ -135,55 +179,119 @@ const Dashboard = () => {
     setIsProcessing(true);
     setDetections(null);
     const model = models.find((m) => m.id === selectedModel)?.name;
-    console.log("mediaURL", uploadedMedia, "model", model, "type", mediaType);
-    
+    const modelUrl = models.find((m) => m.id === selectedModel)?.modelUrl;
+    console.log(
+      "mediaURL",
+      uploadedMedia,
+      "model",
+      model,
+      "modelUrl",
+      modelUrl,
+      "type",
+      mediaType
+    );
+
     try {
-      const endpoint = mediaType === 'image' 
-        ? `${import.meta.env.VITE_BACKEND_URL}/auth/detect`
-        : `${import.meta.env.VITE_BACKEND_URL}/auth/detect_video`;
-        
+      const endpoint =
+        mediaType === "image"
+          ? `${import.meta.env.VITE_BACKEND_URL}/auth/detect`
+          : `${import.meta.env.VITE_BACKEND_URL}/auth/detect_video`;
+
       const response = await axios.post(
         endpoint,
         {
           mediaUrl: uploadedMedia,
           model,
-          ...(mediaType === 'video' && { currentTime: currentVideoTime }),
+          modelUrl,
         },
         { withCredentials: true }
       );
 
       console.log("detection response", response.data);
 
-      // Transform the detections to match our interface
-      const transformedDetections: Detection[] = response.data.detections.map((det: any) => ({
-        id: det.id || String(Math.random()),
-        label: det.label || det.class_name,
-        confidence: det.confidence,
-        box: det.bbox || det.box,
-        class: det.class || 0,
-        class_name: det.class_name || det.label,
-      }));
+      if (mediaType === "image") {
+        // Transform the detections to match our interface
+        const transformedDetections: Detection[] = response.data.detections.map(
+          (det: any) => ({
+            id: det.id || String(Math.random()),
+            label: det.label || det.class_name,
+            confidence: det.confidence,
+            box: Array.isArray(det.box) 
+              ? { 
+                  x: det.box[0], 
+                  y: det.box[1], 
+                  width: det.box[2] - det.box[0], 
+                  height: det.box[3] - det.box[1] 
+                } 
+              : det.box,
+            class: det.class || 0,
+            class_name: det.class_name || det.label,
+          })
+        );
 
-      setDetections(transformedDetections);
+        setDetections(transformedDetections);
+      } else {
+        // For video, we'll use the first frame's detections as the initial display
+        if (response.data.frame_detections && response.data.frame_detections.length > 0) {
+          const firstFrameDetections = response.data.frame_detections[0].detections.map(
+            (det: any) => ({
+              id: String(Math.random()),
+              label: det.class_name,
+              confidence: det.confidence,
+              box: Array.isArray(det.box) 
+                ? { 
+                    x: det.box[0], 
+                    y: det.box[1], 
+                    width: det.box[2] - det.box[0], 
+                    height: det.box[3] - det.box[1] 
+                  } 
+                : det.box,
+              class: det.class || 0,
+              class_name: det.class_name,
+            })
+          );
+          setDetections(firstFrameDetections);
+          setFrameDetections(response.data.frame_detections);
+          setTotalFrames(response.data.total_frames);
+        }
+      }
+
       setOriginalDimensions({
-        width: response.data.original_width,
-        height: response.data.original_height,
+        width: response.data.width || response.data.original_width,
+        height: response.data.height || response.data.original_height,
       });
 
       // Calculate metrics
-      if (transformedDetections.length > 0) {
+      if (mediaType === "image" && response.data.detections.length > 0) {
         const avgConfidence =
-          transformedDetections.reduce(
+          response.data.detections.reduce(
             (acc: number, det: any) => acc + det.confidence,
             0
-          ) / transformedDetections.length;
+          ) / response.data.detections.length;
         setConfidenceAvg(avgConfidence);
+      } else if (mediaType === "video" && response.data.frame_detections && response.data.frame_detections.length > 0) {
+        // Calculate average confidence across all frames
+        let totalConfidence = 0;
+        let totalDetections = 0;
+        
+        response.data.frame_detections.forEach((frame: any) => {
+          frame.detections.forEach((det: any) => {
+            totalConfidence += det.confidence;
+            totalDetections++;
+          });
+        });
+        
+        if (totalDetections > 0) {
+          setConfidenceAvg(totalConfidence / totalDetections);
+        }
       }
 
       // Optional: Show success toast
       toast({
         title: "Detection Complete",
-        description: `Found ${transformedDetections.length} objects`,
+        description: mediaType === "image" 
+          ? `Found ${response.data.detections.length} objects` 
+          : `Processed ${response.data.frame_detections?.length || 0} video frames`,
       });
     } catch (error) {
       console.error("Error processing media:", error);
@@ -251,16 +359,22 @@ const Dashboard = () => {
                 <p className="text-muted-foreground mb-6">
                   {!uploadedMedia
                     ? "Upload media and run detection models"
-                    : `${mediaType === 'image' ? 'Image' : 'Video'} loaded from gallery. You can upload a different media or proceed with detection.`}
+                    : `${
+                        mediaType === "image" ? "Image" : "Video"
+                      } loaded from gallery. You can upload a different media or proceed with detection.`}
                 </p>
 
                 {uploadedMedia ? (
                   <div className="mb-6">
-                    <MediaPlayer 
-                      src={uploadedMedia} 
-                      type={mediaType} 
+                    <MediaPlayer
+                      src={uploadedMedia}
+                      type={mediaType}
                       isProcessing={isProcessing}
-                      onTimeUpdate={mediaType === 'video' ? handleVideoTimeUpdate : undefined}
+                      onTimeUpdate={
+                        mediaType === "video"
+                          ? handleVideoTimeUpdate
+                          : undefined
+                      }
                     />
                   </div>
                 ) : (
@@ -294,10 +408,14 @@ const Dashboard = () => {
               </div>
 
               <ResultDisplay
-                imageUrl={uploadedMedia}
+                mediaUrl={uploadedMedia}
                 detections={detections}
+                frameDetections={frameDetections}
+                currentVideoTime={currentVideoTime}
+                totalFrames={totalFrames}
                 isProcessing={isProcessing}
                 mediaType={mediaType}
+                originalDimensions={originalDimensions}
               />
             </div>
 
