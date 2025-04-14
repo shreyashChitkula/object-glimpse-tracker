@@ -1,3 +1,4 @@
+
 import React from "react";
 import {
   Card,
@@ -6,15 +7,21 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import { BarChart2, Clock, Target, Zap } from "lucide-react";
+import { BarChart2, Clock, Target, Zap, Shield } from "lucide-react";
 import { Progress } from "@/components/ui/progress";
 import { cn } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Button } from "@/components/ui/button";
+import { BadgeInfo } from "lucide-react";
 
 interface MetricsProps {
   processingTime: number | null;
   confidence: number | null;
   fps: number | null;
   isProcessing: boolean;
+  precision?: number | null;
+  recall?: number | null;
+  f1Score?: number | null;
 }
 
 export function PerformanceMetrics({
@@ -22,6 +29,9 @@ export function PerformanceMetrics({
   confidence,
   fps,
   isProcessing,
+  precision = null,
+  recall = null,
+  f1Score = null,
 }: MetricsProps) {
   return (
     <Card className="transition-all duration-300 animate-fade-in">
@@ -103,6 +113,66 @@ export function PerformanceMetrics({
               className={cn("h-2", isProcessing && "animate-pulse")}
             />
           </div>
+
+          {precision !== null && !isProcessing && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-purple-500" />
+                  <span className="text-sm font-medium">Precision</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-5 w-5 p-0">
+                          <BadgeInfo className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p className="text-xs">Ratio of correctly predicted positive observations to total predicted positives</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <span className="text-sm font-semibold">
+                  {precision.toFixed(1)}%
+                </span>
+              </div>
+              <Progress
+                value={precision}
+                className="h-2 bg-muted"
+              />
+            </div>
+          )}
+          
+          {recall !== null && !isProcessing && (
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Shield className="h-4 w-4 text-rose-500" />
+                  <span className="text-sm font-medium">Recall</span>
+                  <TooltipProvider>
+                    <Tooltip>
+                      <TooltipTrigger asChild>
+                        <Button variant="ghost" size="icon" className="h-5 w-5 p-0">
+                          <BadgeInfo className="h-3 w-3" />
+                        </Button>
+                      </TooltipTrigger>
+                      <TooltipContent side="top">
+                        <p className="text-xs">Ratio of correctly predicted positive observations to all actual positives</p>
+                      </TooltipContent>
+                    </Tooltip>
+                  </TooltipProvider>
+                </div>
+                <span className="text-sm font-semibold">
+                  {recall.toFixed(1)}%
+                </span>
+              </div>
+              <Progress
+                value={recall}
+                className="h-2 bg-muted"
+              />
+            </div>
+          )}
         </div>
       </CardContent>
     </Card>
