@@ -63,6 +63,18 @@ interface Model {
   username: string;
   userEmail: string;
   createdAt: string;
+  // New metadata fields
+  description?: string;
+  useCases?: string[];
+  limitations?: string[];
+  version?: string;
+  status?: 'active' | 'deprecated' | 'experimental';
+  performanceMetrics?: {
+    accuracy?: number;
+    precision?: number;
+    recall?: number;
+    f1Score?: number;
+  };
 }
 
 interface User {
@@ -111,6 +123,17 @@ const Admin = () => {
   const [users, setUsers] = useState<User[]>([]);
   const [mediaItems, setMediaItems] = useState<Media[]>([]);
 
+  // Add new state variables for the additional fields
+  const [modelDescription, setModelDescription] = useState("");
+  const [modelUseCases, setModelUseCases] = useState("");
+  const [modelLimitations, setModelLimitations] = useState("");
+  const [modelVersion, setModelVersion] = useState("");
+  const [modelStatus, setModelStatus] = useState("active");
+  const [modelAccuracy, setModelAccuracy] = useState("");
+  const [modelPrecision, setModelPrecision] = useState("");
+  const [modelRecall, setModelRecall] = useState("");
+  const [modelF1Score, setModelF1Score] = useState("");
+
   const handleFileUpload = (file: File) => {
     setSelectedFile(file);
     setModelFile(file);
@@ -132,7 +155,7 @@ const Admin = () => {
     if (!selectedFile || !modelName || !modelType) {
       toast({
         title: "Error",
-        description: "Please fill in all fields",
+        description: "Please fill in all required fields",
         variant: "destructive",
       });
       return;
@@ -142,6 +165,17 @@ const Admin = () => {
     formData.append("file", selectedFile);
     formData.append("modelName", modelName);
     formData.append("modelType", modelType);
+
+    // Append optional metadata fields
+    if (modelDescription) formData.append("description", modelDescription);
+    if (modelUseCases) formData.append("useCases", modelUseCases);
+    if (modelLimitations) formData.append("limitations", modelLimitations);
+    if (modelVersion) formData.append("version", modelVersion);
+    if (modelStatus) formData.append("status", modelStatus);
+    if (modelAccuracy) formData.append("accuracy", modelAccuracy);
+    if (modelPrecision) formData.append("precision", modelPrecision);
+    if (modelRecall) formData.append("recall", modelRecall);
+    if (modelF1Score) formData.append("f1Score", modelF1Score);
 
     try {
       setUploading(true);
@@ -165,11 +199,20 @@ const Admin = () => {
         description: "Model uploaded successfully",
       });
 
-      // Reset form state completely
+      // Reset all form fields
       setSelectedFile(null);
-      setModelFile(null); // Make sure to reset both file state variables
+      setModelFile(null);
       setModelName("");
-      setModelType("object_detection"); // Reset to default value
+      setModelType("object_detection");
+      setModelDescription("");
+      setModelUseCases("");
+      setModelLimitations("");
+      setModelVersion("");
+      setModelStatus("active");
+      setModelAccuracy("");
+      setModelPrecision("");
+      setModelRecall("");
+      setModelF1Score("");
       setIsDialogOpen(false);
 
       // Refresh the models list
@@ -508,19 +551,19 @@ const Admin = () => {
                     <Upload className="mr-2 h-4 w-4" /> Upload Model
                   </Button>
                 </DialogTrigger>
-                <DialogContent className="sm:max-w-[425px]">
+                <DialogContent className="sm:max-w-[500px]">
                   <form onSubmit={handleSubmit}>
                     <DialogHeader>
                       <DialogTitle>Upload New Model</DialogTitle>
                       <DialogDescription>
-                        Upload a new object detection or tracking model to the
-                        system.
+                        Upload a new model to the system. Add metadata to help users understand its capabilities.
                       </DialogDescription>
                     </DialogHeader>
 
-                    <div className="grid gap-4 py-4">
+                    <div className="grid gap-4 py-4 max-h-[60vh] overflow-y-auto pr-2">
+                      {/* Required Fields */}
                       <div className="grid gap-2">
-                        <Label htmlFor="model-name">Model Name</Label>
+                        <Label htmlFor="model-name">Model Name *</Label>
                         <Input
                           id="model-name"
                           placeholder="Enter model name"
@@ -531,24 +574,141 @@ const Admin = () => {
                       </div>
 
                       <div className="grid gap-2">
-                        <Label htmlFor="model-type">Model Type</Label>
+                        <Label htmlFor="model-type">Model Type *</Label>
                         <select
                           id="model-type"
                           className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
                           value={modelType}
                           onChange={(e) => setModelType(e.target.value)}
+                          required
                         >
-                          <option value="object_detection">
-                            Object Detection
-                          </option>
-                          <option value="image_classification">
-                            Image Classification
-                          </option>
+                          <option value="object_detection">Object Detection</option>
+                          <option value="image_classification">Image Classification</option>
+                          {/* <option value="text_classification">Text Classification</option>
+                          <option value="regression">Regression</option> */}
                         </select>
                       </div>
 
+                      {/* Version and Status */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="model-version">Version</Label>
+                          <Input
+                            id="model-version"
+                            placeholder="e.g., 1.0.0"
+                            value={modelVersion}
+                            onChange={(e) => setModelVersion(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="grid gap-2">
+                          <Label htmlFor="model-status">Status</Label>
+                          <select
+                            id="model-status"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                            value={modelStatus}
+                            onChange={(e) => setModelStatus(e.target.value)}
+                          >
+                            <option value="active">Active</option>
+                            <option value="experimental">Experimental</option>
+                            <option value="deprecated">Deprecated</option>
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Description */}
                       <div className="grid gap-2">
-                        <Label>Model File</Label>
+                        <Label htmlFor="model-description">Description</Label>
+                        <textarea
+                          id="model-description"
+                          className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2"
+                          placeholder="Brief description of the model's purpose and function"
+                          value={modelDescription}
+                          onChange={(e) => setModelDescription(e.target.value)}
+                        />
+                      </div>
+
+                      {/* Use Cases and Limitations */}
+                      <div className="grid gap-2">
+                        <Label htmlFor="model-usecases">Use Cases</Label>
+                        <Input
+                          id="model-usecases"
+                          placeholder="Comma-separated list (e.g., Traffic analysis, Security monitoring)"
+                          value={modelUseCases}
+                          onChange={(e) => setModelUseCases(e.target.value)}
+                        />
+                      </div>
+
+                      <div className="grid gap-2">
+                        <Label htmlFor="model-limitations">Limitations</Label>
+                        <Input
+                          id="model-limitations"
+                          placeholder="Comma-separated list (e.g., Low light performance, Small object detection)"
+                          value={modelLimitations}
+                          onChange={(e) => setModelLimitations(e.target.value)}
+                        />
+                      </div>
+
+                      {/* Performance Metrics */}
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="model-accuracy">Accuracy %</Label>
+                          <Input
+                            id="model-accuracy"
+                            type="number"
+                            placeholder="e.g., 95"
+                            min="0"
+                            max="100"
+                            value={modelAccuracy}
+                            onChange={(e) => setModelAccuracy(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="grid gap-2">
+                          <Label htmlFor="model-precision">Precision %</Label>
+                          <Input
+                            id="model-precision"
+                            type="number"
+                            placeholder="e.g., 92"
+                            min="0"
+                            max="100"
+                            value={modelPrecision}
+                            onChange={(e) => setModelPrecision(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="grid gap-2">
+                          <Label htmlFor="model-recall">Recall %</Label>
+                          <Input
+                            id="model-recall"
+                            type="number"
+                            placeholder="e.g., 90"
+                            min="0"
+                            max="100"
+                            value={modelRecall}
+                            onChange={(e) => setModelRecall(e.target.value)}
+                          />
+                        </div>
+
+                        <div className="grid gap-2">
+                          <Label htmlFor="model-f1score">F1 Score %</Label>
+                          <Input
+                            id="model-f1score"
+                            type="number"
+                            placeholder="e.g., 93"
+                            min="0"
+                            max="100"
+                            value={modelF1Score}
+                            onChange={(e) => setModelF1Score(e.target.value)}
+                          />
+                        </div>
+                      </div>
+
+                      {/* Model File Upload */}
+                      <div className="grid gap-2">
+                        <Label>Model File *</Label>
                         {selectedFile ? (
                           <div className="flex items-center gap-2 p-2 border rounded-md">
                             <span className="text-sm truncate flex-1">
@@ -611,28 +771,83 @@ const Admin = () => {
                     <CardHeader className="pb-3">
                       <div className="flex justify-between items-start">
                         <div>
-                          <CardTitle>{model.modelName}</CardTitle>
-                          <CardDescription>{model.modelType}</CardDescription>
+                          <CardTitle>
+                            {model.modelName} 
+                            {model.version && <span className="text-sm font-normal ml-2">v{model.version}</span>}
+                          </CardTitle>
+                          <CardDescription className="flex items-center gap-2">
+                            <span>{model.modelType}</span>
+                            {model.status && (
+                              <span className={`px-2 py-0.5 text-xs rounded-full ${
+                                model.status === 'active' ? 'bg-green-100 text-green-800' :
+                                model.status === 'experimental' ? 'bg-yellow-100 text-yellow-800' :
+                                'bg-red-100 text-red-800'
+                              }`}>
+                                {model.status.charAt(0).toUpperCase() + model.status.slice(1)}
+                              </span>
+                            )}
+                          </CardDescription>
                         </div>
                       </div>
                     </CardHeader>
-                    <CardContent className="text-sm space-y-2">
+                    <CardContent className="text-sm space-y-3 max-h-[200px] overflow-y-auto">
+                      {model.description && (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-muted-foreground font-medium">Description:</span>
+                          <p className="text-xs">{model.description}</p>
+                        </div>
+                      )}
+                      
+                      {model.useCases && model.useCases.length > 0 && (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-muted-foreground font-medium">Use Cases:</span>
+                          <ul className="list-disc pl-5 space-y-0.5">
+                            {model.useCases.map((useCase, index) => (
+                              <li key={index} className="text-xs">{useCase}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {model.limitations && model.limitations.length > 0 && (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-muted-foreground font-medium">Limitations:</span>
+                          <ul className="list-disc pl-5 space-y-0.5">
+                            {model.limitations.map((limitation, index) => (
+                              <li key={index} className="text-xs">{limitation}</li>
+                            ))}
+                          </ul>
+                        </div>
+                      )}
+                      
+                      {model.performanceMetrics && Object.values(model.performanceMetrics).some(v => v) && (
+                        <div className="flex flex-col gap-1">
+                          <span className="text-muted-foreground font-medium">Performance:</span>
+                          <div className="grid grid-cols-2 gap-2 text-xs">
+                            {model.performanceMetrics.accuracy && (
+                              <div>Accuracy: {model.performanceMetrics.accuracy}%</div>
+                            )}
+                            {model.performanceMetrics.precision && (
+                              <div>Precision: {model.performanceMetrics.precision}%</div>
+                            )}
+                            {model.performanceMetrics.recall && (
+                              <div>Recall: {model.performanceMetrics.recall}%</div>
+                            )}
+                            {model.performanceMetrics.f1Score && (
+                              <div>F1 Score: {model.performanceMetrics.f1Score}%</div>
+                            )}
+                          </div>
+                        </div>
+                      )}
+                      
                       <div className="flex flex-col gap-1">
-                        <span className="text-muted-foreground">
-                          Uploaded by:
-                        </span>
-                        <span className="font-medium">{model.username}</span>
-                        <span className="text-xs text-muted-foreground">
-                          {model.userEmail}
-                        </span>
+                        <span className="text-muted-foreground font-medium">Uploaded by:</span>
+                        <span>{model.username}</span>
+                        <span className="text-xs text-muted-foreground">{model.userEmail}</span>
                       </div>
                       <div className="flex flex-col gap-1">
-                        <span className="text-muted-foreground">
-                          Upload date:
-                        </span>
-                        <span className="text-xs">
-                          {format(new Date(model.createdAt), "PPP")}
-                        </span>
+                        <span className="text-muted-foreground font-medium">Upload date:</span>
+                        <span className="text-xs">{format(new Date(model.createdAt), "PPP")}</span>
                       </div>
                     </CardContent>
                     <CardFooter className="flex justify-between">
@@ -647,12 +862,7 @@ const Admin = () => {
                         variant="destructive"
                         size="sm"
                         onClick={() => {
-                          // Show confirmation dialog before deleting
-                          if (
-                            window.confirm(
-                              "Are you sure you want to delete this model?"
-                            )
-                          ) {
+                          if (window.confirm("Are you sure you want to delete this model?")) {
                             handleDeleteModel(model._id);
                           }
                         }}

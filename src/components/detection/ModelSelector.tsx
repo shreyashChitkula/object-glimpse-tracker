@@ -11,9 +11,12 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/comp
 interface Model {
   id: string;
   name: string;
+  type: string;
   description: string;
-  recommended?: boolean;
-  performance: {
+  modelUrl: string;
+  uploadedBy: string;
+  uploadDate: string;
+  performance?: {
     speed: number;
     accuracy: number;
   };
@@ -45,7 +48,7 @@ export function ModelSelector({ models, selectedModel, onSelectModel }: ModelSel
               Choose a detection model based on your needs
             </CardDescription>
           </div>
-          {currentModel?.recommended && (
+          {currentModel && (
             <Badge variant="outline" className="bg-green-500/10 text-green-600 border-green-200">
               Recommended
             </Badge>
@@ -65,7 +68,7 @@ export function ModelSelector({ models, selectedModel, onSelectModel }: ModelSel
                   <SelectItem key={model.id} value={model.id} className="py-2">
                     <div className="flex justify-between w-full items-center">
                       <span>{model.name}</span>
-                      {model.recommended && (
+                      {model && (
                         <Badge variant="outline" className="ml-2 bg-green-500/10 text-green-600 border-green-200">
                           Recommended
                         </Badge>

@@ -346,7 +346,7 @@ export function AuthForm() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <Button
                   type="button"
                   variant="outline"
@@ -397,7 +397,7 @@ export function AuthForm() {
                   </svg>
                   GitHub
                 </Button>
-                <Button
+                {/* <Button
                   type="button"
                   variant="outline"
                   onClick={() => handleThirdPartyLogin("linkedin")}
@@ -415,7 +415,7 @@ export function AuthForm() {
                     />
                   </svg>
                   LinkedIn
-                </Button>
+                </Button> */}
               </div>
             </CardContent>
             <CardFooter>
@@ -594,7 +594,7 @@ export function AuthForm() {
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-3">
+              <div className="grid grid-cols-2 gap-3">
                 <Button
                   type="button"
                   variant="outline"
@@ -645,7 +645,7 @@ export function AuthForm() {
                   </svg>
                   GitHub
                 </Button>
-                <Button
+                {/* <Button
                   type="button"
                   variant="outline"
                   onClick={() => handleThirdPartyLogin("linkedin")}
@@ -663,7 +663,7 @@ export function AuthForm() {
                     />
                   </svg>
                   LinkedIn
-                </Button>
+                </Button> */}
               </div>
             </CardContent>
             <CardFooter>

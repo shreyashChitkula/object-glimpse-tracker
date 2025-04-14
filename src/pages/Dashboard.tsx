@@ -12,17 +12,7 @@ import { Play, Pause, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
-
-// interface Model {
-//   id: string;
-//   name: string;
-//   description: string;
-//   recommended?: boolean;
-//   performance: {
-//     speed: number;
-//     accuracy: number;
-//   };
-// }
+import { set } from "date-fns";
 
 interface Model {
   id: string;
@@ -135,31 +125,31 @@ const Dashboard = () => {
 
   const handleVideoTimeUpdate = (currentTime: number) => {
     setCurrentVideoTime(currentTime);
-    
+
     // Get the corresponding detections for the current video frame
     if (frameDetections && totalFrames) {
       // Calculate which frame index corresponds to current time
-      const videoElement = document.querySelector('video');
+      const videoElement = document.querySelector("video");
       const duration = videoElement?.duration || 0;
-      
+
       if (duration > 0 && totalFrames > 0) {
         const frameIndex = Math.min(
           Math.floor((currentTime / duration) * totalFrames),
           frameDetections.length - 1
         );
-        
+
         // Update detections based on current frame
         if (frameDetections[frameIndex]?.detections) {
-          const currentFrameDetections = frameDetections[frameIndex].detections.map(
-            (det: any) => ({
-              id: String(Math.random()),
-              label: det.class_name,
-              confidence: det.confidence,
-              box: det.box,
-              class: det.class || 0,
-              class_name: det.class_name,
-            })
-          );
+          const currentFrameDetections = frameDetections[
+            frameIndex
+          ].detections.map((det: any) => ({
+            id: String(Math.random()),
+            label: det.class_name,
+            confidence: det.confidence,
+            box: det.box,
+            class: det.class || 0,
+            class_name: det.class_name,
+          }));
           setDetections(currentFrameDetections);
         }
       }
@@ -190,7 +180,9 @@ const Dashboard = () => {
       "type",
       mediaType
     );
-
+    setConfidenceAvg(null);
+    setFps(null);
+    setProcessingTime(null);
     try {
       const endpoint =
         mediaType === "image"
@@ -216,13 +208,13 @@ const Dashboard = () => {
             id: det.id || String(Math.random()),
             label: det.label || det.class_name,
             confidence: det.confidence,
-            box: Array.isArray(det.box) 
-              ? { 
-                  x: det.box[0], 
-                  y: det.box[1], 
-                  width: det.box[2] - det.box[0], 
-                  height: det.box[3] - det.box[1] 
-                } 
+            box: Array.isArray(det.box)
+              ? {
+                  x: det.box[0],
+                  y: det.box[1],
+                  width: det.box[2] - det.box[0],
+                  height: det.box[3] - det.box[1],
+                }
               : det.box,
             class: det.class || 0,
             class_name: det.class_name || det.label,
@@ -232,24 +224,26 @@ const Dashboard = () => {
         setDetections(transformedDetections);
       } else {
         // For video, we'll use the first frame's detections as the initial display
-        if (response.data.frame_detections && response.data.frame_detections.length > 0) {
-          const firstFrameDetections = response.data.frame_detections[0].detections.map(
-            (det: any) => ({
+        if (
+          response.data.frame_detections &&
+          response.data.frame_detections.length > 0
+        ) {
+          const firstFrameDetections =
+            response.data.frame_detections[0].detections.map((det: any) => ({
               id: String(Math.random()),
               label: det.class_name,
               confidence: det.confidence,
-              box: Array.isArray(det.box) 
-                ? { 
-                    x: det.box[0], 
-                    y: det.box[1], 
-                    width: det.box[2] - det.box[0], 
-                    height: det.box[3] - det.box[1] 
-                  } 
+              box: Array.isArray(det.box)
+                ? {
+                    x: det.box[0],
+                    y: det.box[1],
+                    width: det.box[2] - det.box[0],
+                    height: det.box[3] - det.box[1],
+                  }
                 : det.box,
               class: det.class || 0,
               class_name: det.class_name,
-            })
-          );
+            }));
           setDetections(firstFrameDetections);
           setFrameDetections(response.data.frame_detections);
           setTotalFrames(response.data.total_frames);
@@ -262,36 +256,69 @@ const Dashboard = () => {
       });
 
       // Calculate metrics
-      if (mediaType === "image" && response.data.detections.length > 0) {
+      if (mediaType === "image") {
         const avgConfidence =
           response.data.detections.reduce(
             (acc: number, det: any) => acc + det.confidence,
             0
           ) / response.data.detections.length;
-        setConfidenceAvg(avgConfidence);
-      } else if (mediaType === "video" && response.data.frame_detections && response.data.frame_detections.length > 0) {
+        console.log("avgConfidence", avgConfidence);
+        // Check if performance metrics exist in the response
+        if (response.data.performance) {
+          setConfidenceAvg(
+            response.data.performance.confidenceAvg || avgConfidence
+          );
+          setFps(response.data.performance.fps);
+          setProcessingTime(response.data.performance.processingTime);
+        } else {
+          // Fallback to calculated values
+          setConfidenceAvg(avgConfidence);
+          setFps(null);
+          setProcessingTime(null);
+        }
+      } else if (
+        mediaType === "video" &&
+        response.data.frame_detections &&
+        response.data.frame_detections.length > 0
+      ) {
         // Calculate average confidence across all frames
         let totalConfidence = 0;
         let totalDetections = 0;
-        
+
         response.data.frame_detections.forEach((frame: any) => {
           frame.detections.forEach((det: any) => {
             totalConfidence += det.confidence;
             totalDetections++;
           });
         });
-        
-        if (totalDetections > 0) {
-          setConfidenceAvg(totalConfidence / totalDetections);
+
+        // Use performance metrics from backend response
+        if (response.data.performance) {
+          setConfidenceAvg(
+            response.data.performance.confidenceAvg ||
+              (totalDetections > 0 ? totalConfidence / totalDetections : 0)
+          );
+          setFps(response.data.performance.fps);
+          setProcessingTime(response.data.performance.processingTime);
+        } else {
+          // Fallback to calculated values
+          setConfidenceAvg(
+            totalDetections > 0 ? totalConfidence / totalDetections : 0
+          );
+          setFps(null);
+          setProcessingTime(null);
         }
       }
 
       // Optional: Show success toast
       toast({
         title: "Detection Complete",
-        description: mediaType === "image" 
-          ? `Found ${response.data.detections.length} objects` 
-          : `Processed ${response.data.frame_detections?.length || 0} video frames`,
+        description:
+          mediaType === "image"
+            ? `Found ${response.data.detections.length} objects`
+            : `Processed ${
+                response.data.frame_detections?.length || 0
+              } video frames`,
       });
     } catch (error) {
       console.error("Error processing media:", error);
