@@ -13,6 +13,7 @@ import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
 import { set } from "date-fns";
+import { version } from "os";
 
 interface Model {
   id: string;
@@ -22,9 +23,15 @@ interface Model {
   modelUrl: string;
   uploadedBy: string;
   uploadDate: string;
+  status?: "active" | "deprecated" | "experimental" | "beta" | string;
+  version?: string;
+  useCases?: string[];
+  limitations?: string[];
   performance?: {
-    speed: number;
-    accuracy: number;
+    accuracy?: number;
+    precision?: number;
+    recall?: number;
+    f1Score?: number;
   };
 }
 interface Detection {
@@ -66,6 +73,7 @@ const Dashboard = () => {
           `${import.meta.env.VITE_BACKEND_URL}/auth/models`,
           { withCredentials: true }
         );
+        console.log("models response", response.data);
 
         // Transform the backend data to match our interface
         const modelsWithMetrics = response.data.map((model: any) => ({
@@ -74,12 +82,14 @@ const Dashboard = () => {
           type: model.type,
           description: model.description,
           modelUrl: model.modelUrl,
-          uploadedBy: model.uploadedBy,
-          uploadDate: model.uploadDate,
-          performance: {
-            speed: Math.floor(Math.random() * 60) + 40,
-            accuracy: Math.floor(Math.random() * 30) + 70,
-          },
+          uploadedBy: model.uploadedBy || "System",
+          uploadDate:
+            model.uploadDate || model.createdAt || new Date().toISOString(),
+          performance: model.performance,
+          useCases: model.useCases,
+          limitations: model.limitations,
+          status: model.status,
+          version: model.version,
         }));
 
         setModels(modelsWithMetrics);
