@@ -1,3 +1,4 @@
+
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { Navbar } from "@/components/layout/Navbar";
@@ -12,8 +13,8 @@ import { Play, Pause, Download } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { useSearchParams } from "react-router-dom";
 import axios from "axios";
-import { set } from "date-fns";
-import { version } from "os";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { CameraFeed } from "@/components/detection/CameraFeed";
 
 interface Model {
   id: string;
@@ -65,6 +66,7 @@ const Dashboard = () => {
   const [frameDetections, setFrameDetections] = useState<any[] | null>(null);
   const [totalFrames, setTotalFrames] = useState<number | null>(null);
   const [processedVideoUrl, setProcessedVideoUrl] = useState<string | null>(null);
+  const [activeTab, setActiveTab] = useState("upload");
   const { toast } = useToast();
 
   useEffect(() => {
@@ -113,6 +115,7 @@ const Dashboard = () => {
     if (mediaUrlFromGallery) {
       setUploadedMedia(mediaUrlFromGallery);
       setMediaType(mediaTypeFromGallery as "image" | "video");
+      setActiveTab("upload");
     }
   }, [mediaUrlFromGallery, mediaTypeFromGallery]);
 
@@ -361,7 +364,7 @@ const Dashboard = () => {
     // Create a simple report text
     const reportLines = [
       `Object Detection Report - ${new Date().toLocaleString()}`,
-      `Media Type: ${mediaType}`,
+      `Media Type: ${activeTab === "camera" ? "Live Camera" : mediaType}`,
       `Model: ${models.find((m) => m.id === selectedModel)?.name}`,
       `Processing Time: ${processingTime?.toFixed(2)} ms`,
       `Average Confidence: ${(confidenceAvg || 0) * 100}%`,
@@ -383,6 +386,21 @@ const Dashboard = () => {
     link.click();
   };
 
+  // Handle updates from the CameraFeed component
+  const handleCameraDetectionsUpdate = (cameraDetections: Detection[]) => {
+    setDetections(cameraDetections);
+  };
+
+  const handleProcessingTimeUpdate = (time: number) => {
+    setProcessingTime(time);
+    // Calculate approximate FPS based on processing time
+    setFps(1000 / time);
+  };
+
+  const handleConfidenceAvgUpdate = (avg: number) => {
+    setConfidenceAvg(avg);
+  };
+
   return (
     <div className="min-h-screen flex flex-col">
       <Helmet>
@@ -400,54 +418,87 @@ const Dashboard = () => {
                   Object Detection Dashboard
                 </h1>
                 <p className="text-muted-foreground mb-6">
-                  {!uploadedMedia
-                    ? "Upload media and run detection models"
-                    : `${
-                        mediaType === "image" ? "Image" : "Video"
-                      } loaded from gallery. You can upload a different media or proceed with detection.`}
+                  Upload media, use your camera, or select from gallery to run detection
                 </p>
 
-                {uploadedMedia ? (
-                  <div className="mb-6">
-                    <MediaPlayer
-                      src={uploadedMedia}
-                      type={mediaType}
-                      isProcessing={isProcessing}
-                      onTimeUpdate={
-                        mediaType === "video"
-                          ? handleVideoTimeUpdate
-                          : undefined
-                      }
-                    />
-                  </div>
-                ) : (
-                  <UploadArea onMediaUpload={handleMediaUpload} />
-                )}
-
-                <div className="mt-6 flex flex-wrap gap-3 justify-end">
-                  <Button
-                    className="gap-2"
-                    disabled={!uploadedMedia || isProcessing}
-                    onClick={handleProcessMedia}
-                  >
-                    {isProcessing ? (
-                      <Pause className="h-4 w-4" />
+                <Tabs 
+                  defaultValue={activeTab} 
+                  value={activeTab}
+                  onValueChange={setActiveTab} 
+                  className="mb-6"
+                >
+                  <TabsList className="grid grid-cols-2 mb-4">
+                    <TabsTrigger value="upload">Upload Media</TabsTrigger>
+                    <TabsTrigger value="camera">Live Camera</TabsTrigger>
+                  </TabsList>
+                  
+                  <TabsContent value="upload" className="mt-0">
+                    {uploadedMedia ? (
+                      <div className="mb-6">
+                        <MediaPlayer
+                          src={uploadedMedia}
+                          type={mediaType}
+                          isProcessing={isProcessing}
+                          onTimeUpdate={
+                            mediaType === "video"
+                              ? handleVideoTimeUpdate
+                              : undefined
+                          }
+                        />
+                      </div>
                     ) : (
-                      <Play className="h-4 w-4" />
+                      <UploadArea onMediaUpload={handleMediaUpload} />
                     )}
-                    {isProcessing ? "Processing..." : "Run Detection"}
-                  </Button>
 
-                  <Button
-                    variant="outline"
-                    className="gap-2"
-                    disabled={!detections}
-                    onClick={handleDownloadReport}
-                  >
-                    <Download className="h-4 w-4" />
-                    Download Report
-                  </Button>
-                </div>
+                    {uploadedMedia && (
+                      <div className="mt-6 flex flex-wrap gap-3 justify-end">
+                        <Button
+                          className="gap-2"
+                          disabled={!uploadedMedia || isProcessing}
+                          onClick={handleProcessMedia}
+                        >
+                          {isProcessing ? (
+                            <Pause className="h-4 w-4" />
+                          ) : (
+                            <Play className="h-4 w-4" />
+                          )}
+                          {isProcessing ? "Processing..." : "Run Detection"}
+                        </Button>
+
+                        <Button
+                          variant="outline"
+                          className="gap-2"
+                          disabled={!detections}
+                          onClick={handleDownloadReport}
+                        >
+                          <Download className="h-4 w-4" />
+                          Download Report
+                        </Button>
+                      </div>
+                    )}
+                  </TabsContent>
+                  
+                  <TabsContent value="camera" className="mt-0">
+                    <CameraFeed 
+                      selectedModel={selectedModel}
+                      onDetectionsUpdate={handleCameraDetectionsUpdate}
+                      onProcessingTimeUpdate={handleProcessingTimeUpdate}
+                      onConfidenceAvgUpdate={handleConfidenceAvgUpdate}
+                    />
+                    
+                    <div className="mt-6 flex flex-wrap gap-3 justify-end">
+                      <Button
+                        variant="outline"
+                        className="gap-2"
+                        disabled={!detections}
+                        onClick={handleDownloadReport}
+                      >
+                        <Download className="h-4 w-4" />
+                        Download Report
+                      </Button>
+                    </div>
+                  </TabsContent>
+                </Tabs>
               </div>
 
               <ResultDisplay
@@ -457,7 +508,7 @@ const Dashboard = () => {
                 currentVideoTime={currentVideoTime}
                 totalFrames={totalFrames}
                 isProcessing={isProcessing}
-                mediaType={mediaType}
+                mediaType={activeTab === "camera" ? "camera" : mediaType}
                 originalDimensions={originalDimensions}
                 processedVideoUrl={processedVideoUrl}
                 selectedModel={selectedModel}
