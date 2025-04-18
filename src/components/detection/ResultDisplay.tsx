@@ -3,7 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Button } from '@/components/ui/button';
-import { Download, Search, Eye, Tag, FileText, List } from 'lucide-react';
+import { Download, Search, Eye, Tag, FileText, List, Trash } from 'lucide-react';
 import { Progress } from '@/components/ui/progress';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/components/ui/use-toast';
@@ -32,6 +32,9 @@ interface ResultDisplayProps {
   isProcessing: boolean;
   mediaType: "image" | "video";
   originalDimensions?: { width: number; height: number };
+  processedVideoUrl?: string | null;
+  selectedModel?: string; // Add this line
+  onCacheCleared?: () => void; // Add this line for callback
 }
 
 export function ResultDisplay({ 
@@ -42,7 +45,10 @@ export function ResultDisplay({
   totalFrames = 0,
   isProcessing, 
   mediaType,
-  originalDimensions
+  originalDimensions,
+  processedVideoUrl,
+  selectedModel,
+  onCacheCleared
 }: ResultDisplayProps) {
   const mediaRef = useRef<HTMLImageElement | HTMLVideoElement>(null);
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -228,6 +234,112 @@ export function ResultDisplay({
     }
   };
 
+  const handleDownloadVideo = async () => {
+    if (!mediaUrl || !selectedModel) {
+      toast({
+        title: "Error",
+        description: "Missing required information to download video",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      // First get the processed video URL from the API
+      const apiResponse = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/download_video`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mediaUrl,
+          model: selectedModel
+        })
+      });
+
+      if (!apiResponse.ok) {
+        const error = await apiResponse.json();
+        throw new Error(error.error || 'Failed to get processed video URL');
+      }
+
+      const { processed_video_url } = await apiResponse.json();
+
+      if (!processed_video_url) {
+        throw new Error('No processed video URL available');
+      }
+
+      // Download the video using the URL
+      const response = await fetch(processed_video_url);
+      const blob = await response.blob();
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `processed-video-${Date.now()}.mp4`;
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      toast({
+        title: "Success",
+        description: "Video download started",
+      });
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to download video",
+        variant: "destructive",
+      });
+    }
+  };
+
+  const handleClearCache = async () => {
+    if (!mediaUrl || !selectedModel) {
+      toast({
+        title: "Error",
+        description: "Missing required information to clear cache",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    try {
+      const response = await fetch(`${import.meta.env.VITE_BACKEND_URL}/auth/clear_cache`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          mediaUrl,
+          model: selectedModel
+        })
+      });
+
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.error || 'Failed to clear cache');
+      }
+
+      toast({
+        title: "Success",
+        description: "Cache cleared successfully",
+      });
+
+      // Call the callback to reset states in parent component
+      if (onCacheCleared) {
+        onCacheCleared();
+      }
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to clear cache",
+        variant: "destructive",
+      });
+    }
+  };
+
   const generatePDFReport = async () => {
     if ((!detections && !currentFrameDetections) || !mediaUrl) return;
     
@@ -368,10 +480,12 @@ export function ResultDisplay({
   const renderControls = () => {
     return (
       <div className="flex flex-wrap gap-2 mt-4">
+        {/* Visualization controls */}
         <Button
           variant="secondary"
           size="sm"
           onClick={() => setShowBoxes(!showBoxes)}
+          disabled={!currentFrameDetections || currentFrameDetections.length === 0}
         >
           <Eye className="h-4 w-4 mr-2" />
           {showBoxes ? 'Hide Boxes' : 'Show Boxes'}
@@ -381,7 +495,7 @@ export function ResultDisplay({
           variant="secondary"
           size="sm"
           onClick={() => setShowLabels(!showLabels)}
-          disabled={!showBoxes}
+          disabled={!showBoxes || !currentFrameDetections || currentFrameDetections.length === 0}
         >
           <Tag className="h-4 w-4 mr-2" />
           {showLabels ? 'Hide Labels' : 'Show Labels'}
@@ -406,6 +520,30 @@ export function ResultDisplay({
           <FileText className="h-4 w-4 mr-2" />
           Download Report
         </Button>
+
+        {/* Video specific controls - always visible and enabled for video type */}
+        {mediaType === "video" && (
+          <>
+            <Button
+              variant="secondary"
+              size="sm"
+              onClick={handleDownloadVideo}
+            >
+              <Download className="h-4 w-4 mr-2" />
+              Download Processed Video
+            </Button>
+
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={handleClearCache}
+              disabled={!selectedModel}
+            >
+              <Trash className="h-4 w-4 mr-2" />
+              Clear Cache
+            </Button>
+          </>
+        )}
       </div>
     );
   };

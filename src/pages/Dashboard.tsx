@@ -64,6 +64,7 @@ const Dashboard = () => {
   } | null>(null);
   const [frameDetections, setFrameDetections] = useState<any[] | null>(null);
   const [totalFrames, setTotalFrames] = useState<number | null>(null);
+  const [processedVideoUrl, setProcessedVideoUrl] = useState<string | null>(null);
   const { toast } = useToast();
 
   useEffect(() => {
@@ -257,6 +258,11 @@ const Dashboard = () => {
           setDetections(firstFrameDetections);
           setFrameDetections(response.data.frame_detections);
           setTotalFrames(response.data.total_frames);
+        }
+
+        // Store the processed video URL
+        if (response.data.processed_video_url) {
+          setProcessedVideoUrl(response.data.processed_video_url);
         }
       }
 
@@ -453,6 +459,14 @@ const Dashboard = () => {
                 isProcessing={isProcessing}
                 mediaType={mediaType}
                 originalDimensions={originalDimensions}
+                processedVideoUrl={processedVideoUrl}
+                selectedModel={selectedModel}
+                onCacheCleared={() => {
+                  // Reset states as needed
+                  setProcessedVideoUrl(null);
+                  setDetections(null);
+                  setFrameDetections(null);
+                }}
               />
             </div>
 
