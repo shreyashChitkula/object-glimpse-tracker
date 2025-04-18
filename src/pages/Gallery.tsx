@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 import { Navbar } from "@/components/layout/Navbar";
@@ -122,8 +121,8 @@ const Gallery = () => {
   };
 
   const handleMediaClick = (media: MediaItem) => {
-    // Navigate to dashboard with media info
-    navigate(`/dashboard?mediaURL=${media.thumbnail}&mediaType=${media.type}`);
+    // Update to use new detection route
+    navigate(`/detection?mediaURL=${media.thumbnail}&mediaType=${media.type}`);
   };
 
   return (

@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/context/ThemeContext";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
+import Detection from "./pages/Detection"; // New import
 import Auth from "./pages/Auth";
 import Gallery from "./pages/Gallery";
 import Admin from "./pages/Admin";
@@ -29,6 +30,7 @@ const App = () => (
               <Route path="/" element={<Layout />}>
                 <Route index element={<Index />} />
                 <Route path="/dashboard" element={<Dashboard />} />
+                <Route path="/detection" element={<Detection />} />
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/gallery" element={<Gallery />} />
                 
