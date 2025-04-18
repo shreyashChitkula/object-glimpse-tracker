@@ -16,6 +16,13 @@ import axios from "axios";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { CameraFeed } from "@/components/detection/CameraFeed";
 
+interface ModelPerformance {
+  accuracy?: number;
+  precision?: number;
+  recall?: number;
+  f1Score?: number;
+}
+
 interface Model {
   id: string;
   name: string;
@@ -28,13 +35,9 @@ interface Model {
   version?: string;
   useCases?: string[];
   limitations?: string[];
-  performance?: {
-    accuracy?: number;
-    precision?: number;
-    recall?: number;
-    f1Score?: number;
-  };
+  performance?: ModelPerformance;
 }
+
 interface Detection {
   id: string;
   label: string;
