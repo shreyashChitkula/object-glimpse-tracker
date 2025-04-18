@@ -25,6 +25,7 @@ interface ModelPerformance {
   precision: number | null;
   recall: number | null;
   f1Score: number | null;
+  speed?: number | null;  // Made speed optional to match API response
 }
 
 interface Model {

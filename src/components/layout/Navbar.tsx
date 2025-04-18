@@ -28,15 +28,22 @@ export function Navbar() {
   const getNavItems = () => {
     const items: NavItem[] = [
       { title: "Home", href: "/" },
-      // { title: "Dashboard", href: "/dashboard" },
+      { title: "Dashboard", href: "/dashboard" },
     ];
 
     if (isAuthenticated) {
-      items.push({
-        title: "Gallery",
-        href: "/gallery",
-        icon: <Image className="h-4 w-4 mr-2" />,
-      });
+      items.push(
+        {
+          title: "Live Camera",
+          href: "/detection",
+          icon: <Camera className="h-4 w-4 mr-2" />,
+        },
+        {
+          title: "Gallery",
+          href: "/gallery",
+          icon: <Image className="h-4 w-4 mr-2" />,
+        }
+      );
 
       if (isAdmin()) {
         items.push({

@@ -1,4 +1,3 @@
-
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
@@ -7,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { ThemeProvider } from "@/context/ThemeContext";
 import Index from "./pages/Index";
 import Dashboard from "./pages/Dashboard";
-import Detection from "./pages/Detection"; // New import
+import Detection from "./pages/Detection";
 import Auth from "./pages/Auth";
 import Gallery from "./pages/Gallery";
 import Admin from "./pages/Admin";
@@ -34,12 +33,10 @@ const App = () => (
                 <Route path="/auth" element={<Auth />} />
                 <Route path="/gallery" element={<Gallery />} />
                 
-                {/* Admin routes */}
                 <Route element={<AdminRoute />}>
                   <Route path="/admin" element={<Admin />} />
                 </Route>
                 
-                {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Route>
             </Routes>
